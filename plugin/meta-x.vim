@@ -5,8 +5,8 @@
 
 " todos {{{
 " sources. favorits and feedkeys first
-" convert handler.fn to handler.fnrf (function(fn)) and order by priority
 " paste from registers
+" candidates list type: flow, list, table
 " hl line if no candidates
 " '$' prefix for shell commands
 " auto cancel cmd entering by timeout. ability to continue cancelled cmd
