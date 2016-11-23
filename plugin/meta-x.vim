@@ -1,34 +1,26 @@
+" File: meta-x.vim
+" Description: Progressive cmdline. Inspired by desire to kick ass Helm-M-x.
+" Author: Oleg Khalidov <brooth@gmail.com>
+" License: MIT
 
-" echohl WarningMsg | echo 'help' | echohl None | echon ' hoo' | echon ' fum' | echo ' newline'
-" echo getcompletion('', 'command', 0)
+" todos {{{
+" paste from registers
+" hl line if no candidates
+" '$' prefix for shell commands
+" }}}
 
-function! s:Cpcm()
-    let g:mx = getcmdline()
-    return ''
-endfunction
-cnoremap <C-t> <C-\>e(<SID>Cpcm())<CR>
+function! MetaX(line) "{{{
+    call mx#tools#log('MetaX(' . a:line . ')')
 
-function! Cm(line)
-    call feedkeys(a:line . "\<C-A>\<C-t>\<Esc>", 'x')
+    let ctx = {
+        \   'cmd' : a:line,
+        \   'cand_idx': -1,
+        \   'welc_sign': ':',
+        \   }
+    call mx#start(ctx)
+endfunction "}}}
 
-    redraw
-    echohl WarningMsg | echo g:mx | echohl None | echo a:line
+cnoremap <C-t> <C-\>e(mx#cutcmdline())<CR>
+nnoremap <M-x> :call MetaX('')<cr>
 
-    let line = a:line
-    let c = getchar()
-    if c == 13
-        return line
-    elseif c == 27 || c == 3 "Esc or c-c
-        redraw
-        return
-    elseif c is# "\<BS>"
-        let line = line[:-2]
-    elseif c == 21 "C-U
-        let line = ''
-    else
-        let line = line . nr2char(c)
-    endif
-
-    return Cm(line)
-endfunction
-nnoremap <C-j> :call Cm(':h')<cr>
+" vim: set et fdm=marker sts=4 sw=4:
