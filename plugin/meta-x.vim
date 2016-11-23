@@ -4,9 +4,12 @@
 " License: MIT
 
 " todos {{{
+" sources. favorits and feedkeys first
+" convert handler.fn to handler.fnrf (function(fn)) and order by priority
 " paste from registers
 " hl line if no candidates
 " '$' prefix for shell commands
+" auto cancel cmd entering by timeout. ability to continue cancelled cmd
 " }}}
 
 function! MetaX(line) "{{{
@@ -14,10 +17,10 @@ function! MetaX(line) "{{{
 
     let ctx = {
         \   'cmd' : a:line,
-        \   'cand_idx': -1,
-        \   'welc_sign': ':',
+        \   'candidate_idx': -1,
+        \   'welcome_sign': ':',
         \   }
-    call mx#start(ctx)
+    call mx#loop(ctx)
 endfunction "}}}
 
 cnoremap <C-t> <C-\>e(mx#cutcmdline())<CR>

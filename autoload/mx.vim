@@ -6,6 +6,20 @@
 " options "{{{
 call mx#tools#setdefault('g:mx#favorits', ['foo', 'b[ar]'])
 call mx#tools#setdefault('g:mx#max_candidates', 10)
+
+call mx#tools#setdefault('g:mx#handlers', {})
+call mx#tools#setdefault('g:mx#handlers.specialkeys', {
+    \   'fn': 's:specialkeyshandler',
+    \   'priority': 100,
+    \   })
+call mx#tools#setdefault('g:mx#handlers.default', {
+    \   'fn': 's:defaulthandler',
+    \   'priority': 0,
+    \   })
+call mx#tools#setdefault('g:mx#handlers.favorits', {
+    \   'fn': 's:favoritshandler',
+    \   'priority': 10,
+    \   })
 "}}}
 
 function! mx#cutcmdline() "{{{
@@ -14,56 +28,94 @@ function! mx#cutcmdline() "{{{
     return ''
 endfunction "}}}
 
-function! mx#start(ctx) " {{{
+function! mx#loop(ctx) " {{{
     if mx#tools#isdebug()
         call mx#tools#log('mx#start(' . string(a:ctx) . ')')
     endif
 
-    if get(a:ctx, 'skip_cand', 0)
-        unlet a:ctx.skip_cand
-    else
-        if empty(a:ctx.cmd)
-            let a:ctx.candidates = g:mx#favorits
-        else
-            silent! call feedkeys(":" . a:ctx.cmd . "\<C-A>\<C-t>\<Esc>", 'x')
-            let a:ctx.candidates = split(s:cmdline, ' ')
-        endif
+    if get(a:ctx, 'char', '') == ''
+        let a:ctx.char = ''
+    endif
+
+    while 1
+        let handled = 0
+        for k in keys(g:mx#handlers)
+            let handler = g:mx#handlers[k]
+            let handled = call(function(handler.fn), [a:ctx])
+            if handled == -1
+                return
+            elseif handled
+                break
+            endif
+        endfor
 
         call mx#tools#log('candidates: (' . string(a:ctx.candidates) . ')')
         if len(a:ctx.candidates) > g:mx#max_candidates
             let a:ctx.candidates = a:ctx.candidates[:g:mx#max_candidates]
         endif
+
+        redraw
+        echohl WarningMsg
+        for candidate in a:ctx.candidates
+            echon candidate . ' '
+        endfor
+        echohl None
+        echo a:ctx.welcome_sign . a:ctx.cmd
+
+        if handled != 2
+        else
+            let a:ctx.char = ''
+        endif
+            let a:ctx.char = getchar()
+    endwhile
+endfunction "}}}
+
+function! s:defaulthandler(ctx) abort "{{{
+    if mx#tools#isdebug()
+        call mx#tools#log('defaulthandler(' . string(a:ctx) . ')')
     endif
 
-    redraw
-    echohl WarningMsg
-    for candidate in a:ctx.candidates
-        echon candidate . ' '
-    endfor
-    echohl None
-    echo a:ctx.welc_sign . a:ctx.cmd
+    let a:ctx.cmd = a:ctx.cmd . nr2char(a:ctx.char)
+    silent! call feedkeys(":" . a:ctx.cmd . "\<C-A>\<C-t>\<Esc>", 'x')
+    let a:ctx.candidates = split(s:cmdline, ' ')
+    return 1
+endfunction "}}}
 
-    let c = getchar()
-    if c == 13 "CR
+function! s:specialkeyshandler(ctx) abort "{{{
+    if mx#tools#isdebug()
+        call mx#tools#log('specialkeyshandler(' . string(a:ctx) . ')')
+    endif
+
+    if a:ctx.char == 27 || a:ctx.char == 3 "Esc, C-c
+        redraw
+        return -1
+    elseif a:ctx.char == 13 "CR
         exec a:ctx.cmd
         redraw
-        return
-    elseif c == 9 "tab
-        let a:ctx.cand_idx = len(a:ctx.candidates)-1 <= a:ctx.cand_idx? 0 : a:ctx.cand_idx + 1
-        let a:ctx['skip_cand'] = 1
-        let a:ctx.cmd = a:ctx.candidates[a:ctx.cand_idx]
-    elseif c == 27 || c == 3 "Esc, c-c
-        redraw
-        return
-    elseif c is# "\<BS>"
+        return -1
+    elseif a:ctx.char == 9 "Tab
+        let a:ctx.candidate_idx = len(a:ctx.candidates)-1 <= a:ctx.candidate_idx? 0 : a:ctx.candidate_idx + 1
+        let a:ctx.cmd = a:ctx.candidates[a:ctx.candidate_idx]
+        return 1
+    elseif a:ctx.char is# "\<BS>" "Backspace
         let a:ctx.cmd = a:ctx.cmd[:-2]
-    elseif c == 21 "C-U
+        return 2
+    elseif a:ctx.char == 21 "C-U
         let a:ctx.cmd = ''
-    else
-        let a:ctx.cmd = a:ctx.cmd . nr2char(c)
+        return 2
+    endif
+    return 0
+endfunction "}}}
+
+function! s:favoritshandler(ctx) abort "{{{
+    if mx#tools#isdebug()
+        call mx#tools#log('favoritshandler(' . string(a:ctx) . ')')
     endif
 
-    call mx#start(a:ctx)
+    if empty(a:ctx.char) && empty(a:ctx.cmd)
+        let a:ctx.candidates = g:mx#favorits
+        return 1
+    endif
 endfunction "}}}
 
 " vim: set et fdm=marker sts=4 sw=4:
