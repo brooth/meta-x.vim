@@ -4,7 +4,8 @@
 " License: MIT
 
 " options "{{{
-call mx#tools#setdefault('g:mx#max_candidates', 10)
+call mx#tools#setdefault('g:mx#max_lines', 1)
+call mx#tools#setdefault('g:mx#max_candidates', 50)
 
 call mx#tools#setdefault('g:mx#favorits', [
     \   {'word': 'find'},
@@ -94,14 +95,43 @@ function! s:drawcxt(ctx) abort "{{{
     endif
 
     redraw
-    echohl WarningMsg
+    echohl MxCandidates
+
+    let chars = 0
+    let candidate_idx = 0
     for candidate in get(a:ctx, 'candidates', [])
         if get(candidate, 'visible', 1)
-            echon candidate.word . ' '
+            let out = candidate.word
+            if (chars + len(out) + 2) / &columns > g:mx#max_lines - 1
+                echon ' >'
+                let chars += 2
+                break
+            endif
+
+            if !empty(chars)
+                echon ' '
+                let chars += 1
+            endif
+
+            if candidate_idx == a:ctx.candidate_idx
+                echohl MxSelCandidate
+            endif
+
+            echon out
+            let chars += len(out)
+
+            if candidate_idx == a:ctx.candidate_idx
+                echohl MxCandidates
+            endif
         endif
+        let candidate_idx += 1
     endfor
+    if chars % &columns != 0
+        echon repeat(' ', (&columns - chars % &columns))
+    endif
+
     echohl None
-    echo a:ctx.welcome_sign . a:ctx.cmd
+    echon a:ctx.welcome_sign . a:ctx.cmd
 endfunction "}}}
 
 function! s:favoritsource(ctx) abort "{{{
@@ -134,6 +164,7 @@ function! s:defaulthandler(ctx) abort "{{{
     endif
 
     let a:ctx.cmd = a:ctx.cmd . nr2char(a:ctx.char)
+    let a:ctx.candidate_idx = -1
     let candidates = []
     for source in s:sources
         let sourcecandidates = call(function(source.fn), [a:ctx])

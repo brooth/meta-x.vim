@@ -13,8 +13,14 @@
 " auto cancel cmd entering by timeout. ability to continue cancelled cmd
 " }}}
 
+" syntax {{{
+hi def link MxSelCandidate WildMenu
+hi def link MxCandidates StatusLine
+
+" }}}
+
 function! MetaX(line) "{{{
-    call mx#tools#log('MetaX(' . a:line . ')')
+    call mx#tools#log('============== META-X (' . a:line . ') ===============')
 
     let ctx = {
         \   'cmd' : a:line,
