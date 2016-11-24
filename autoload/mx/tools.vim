@@ -33,8 +33,12 @@ function! mx#tools#setdefault(var, val) abort "{{{
 endfunction "}}}
 
 function! mx#tools#PriorityCompare(i1, i2) "{{{
-    return get(a:i1, 'priority', 0) == get(a:i2, 'priority', 0) ? 0
-    \   : get(a:i1, 'priority', 0) > get(a:i2, 'priority', 0) ? -1 : 1
+    return a:i1.priority == a:i2.priority ? 0
+    \   : a:i1.priority > a:i2.priority ? -1 : 1
+endfunction "}}}
+
+function! mx#tools#WordComparator(i1, i2) "{{{
+    return a:i1.word != a:i2.word
 endfunction "}}}
 
 " vim: set et fdm=marker sts=4 sw=4:

@@ -7,32 +7,52 @@
 call mx#tools#setdefault('g:mx#max_candidates', 10)
 
 call mx#tools#setdefault('g:mx#favorits', [
-    \   {'word': 'foo'},
-    \   {'word': 'bar', 'short': 'b'},
+    \   {'word': 'find'},
+    \   {'word': 'write', 'short': 'w'},
+    \   {'word': 'quite', 'short': 'q'},
     \   {'word': 'Far', 'abbr': 'f'},
     \   ])
+
+for fav in g:mx#favorits
+    if !get(fav, 'favorit')
+        let fav['favorit'] = 1
+    endif
+endfor
 
 call mx#tools#setdefault('g:mx#handlers', {})
 call mx#tools#setdefault('g:mx#handlers.specialkeys', {
     \   'fn': 's:specialkeyshandler',
-    \   'priority': 100,
+    \   'priority': 20,
     \   })
 call mx#tools#setdefault('g:mx#handlers.default', {
     \   'fn': 's:defaulthandler',
-    \   'priority': 0,
-    \   })
-call mx#tools#setdefault('g:mx#handlers.favorits', {
-    \   'fn': 's:favoritshandler',
-    \   'priority': 10,
     \   })
 
 let s:handlers = []
 for k in keys(g:mx#handlers)
     let val = copy(g:mx#handlers[k])
-    let val['name'] = k
+    let val.name = k
+    if !get(val, 'priority')
+        let val.priority = 0
+    endif
     call add(s:handlers, val)
 endfor
 let s:handlers = sort(s:handlers, 'mx#tools#PriorityCompare')
+
+call mx#tools#setdefault('g:mx#sources', {})
+call mx#tools#setdefault('g:mx#sources.favorits', {
+    \   'fn': 's:favoritsource',
+    \   })
+call mx#tools#setdefault('g:mx#sources.feedkeys', {
+    \   'fn': 's:feedkeysource',
+    \   })
+
+let s:sources = []
+for k in keys(g:mx#sources)
+    let val = copy(g:mx#sources[k])
+    let val.name = k
+    call add(s:sources, val)
+endfor
 "}}}
 
 function! mx#cutcmdline() "{{{
@@ -63,14 +83,7 @@ function! mx#loop(ctx) " {{{
             return
         endif
 
-        call mx#tools#log('candidates: (' . string(a:ctx.candidates) . ')')
-        if len(a:ctx.candidates) > g:mx#max_candidates
-            let a:ctx.candidates = a:ctx.candidates[:g:mx#max_candidates]
-        endif
-        let a:ctx.candidates = sort(a:ctx.candidates, 'mx#tools#PriorityCompare')
-
         call s:drawcxt(a:ctx)
-
         let a:ctx.char = handled != 2 ? getchar() : ''
     endwhile
 endfunction "}}}
@@ -82,7 +95,7 @@ function! s:drawcxt(ctx) abort "{{{
 
     redraw
     echohl WarningMsg
-    for candidate in a:ctx.candidates
+    for candidate in get(a:ctx, 'candidates', [])
         if get(candidate, 'visible', 1)
             echon candidate.word . ' '
         endif
@@ -91,29 +104,71 @@ function! s:drawcxt(ctx) abort "{{{
     echo a:ctx.welcome_sign . a:ctx.cmd
 endfunction "}}}
 
+function! s:favoritsource(ctx) abort "{{{
+    let candidates = []
+    for fav in g:mx#favorits
+        if '^' . fav.word =~? a:ctx.cmd
+            call add(candidates, copy(fav))
+        endif
+    endfor
+    return candidates
+endfunction "}}}
+
+function! s:feedkeysource(ctx) abort "{{{
+    let candidates = []
+    if !empty(a:ctx.cmd)
+        silent! call feedkeys(":" . a:ctx.cmd . "\<C-A>\<C-t>\<Esc>", 'x')
+        for word in split(s:cmdline, ' ')
+            call add(candidates, {'word': word})
+        endfor
+    endif
+    return candidates
+endfunction "}}}
+
 function! s:defaulthandler(ctx) abort "{{{
     if mx#tools#isdebug()
         call mx#tools#log('defaulthandler(' . string(a:ctx) . ')')
     endif
+    if a:ctx.char != '' && type(a:ctx.char) != 0 " not a number
+        return
+    endif
 
     let a:ctx.cmd = a:ctx.cmd . nr2char(a:ctx.char)
-    silent! call feedkeys(":" . a:ctx.cmd . "\<C-A>\<C-t>\<Esc>", 'x')
-
     let candidates = []
-    for word in split(s:cmdline, ' ')
-        let candidate = {'word': word}
-
-        if word == a:ctx.cmd " same word
-            let candidate['priority'] = 20
-        elseif '^' . word =~# a:ctx.cmd "starts with same case
-            let candidate['priority'] = 10
-        elseif '^' . word =~? a:ctx.cmd "starts with ignore case
-            let candidate['priority'] = 5
+    for source in s:sources
+        let sourcecandidates = call(function(source.fn), [a:ctx])
+        if mx#tools#isdebug()
+            call mx#tools#log('source: '. source.name .', candidates: '. string(sourcecandidates))
         endif
-
-        call add(candidates, candidate)
+        call extend(candidates, sourcecandidates)
     endfor
 
+    for candidate in candidates
+        if get(candidate, 'priority')
+            continue
+        endif
+        let candidate.priority = 0
+        if get(candidate, 'abbr', '') ==# a:ctx.cmd
+            let candidate.priority += 40
+        endif
+        if get(candidate, 'favorit')
+            let candidate.priority += 20
+        endif
+
+        if candidate.word == a:ctx.cmd " same word
+            let candidate.priority += 15
+        elseif '^' . candidate.word =~# a:ctx.cmd "starts with same case
+            let candidate.priority += 10
+        elseif '^' . candidate.word =~? a:ctx.cmd "starts with ignore case
+            let candidate.priority += 5
+        endif
+    endfor
+
+    let candidates = sort(candidates, 'mx#tools#PriorityCompare')
+    let candidates = uniq(candidates, 'mx#tools#WordComparator')
+    if len(candidates) > g:mx#max_candidates
+        let candidates = candidates[:g:mx#max_candidates]
+    endif
     let a:ctx.candidates = candidates
     return 1
 endfunction "}}}
@@ -153,17 +208,6 @@ function! s:specialkeyshandler(ctx) abort "{{{
     elseif a:ctx.char == 21 "C-U
         let a:ctx.cmd = ''
         return 2
-    endif
-endfunction "}}}
-
-function! s:favoritshandler(ctx) abort "{{{
-    if mx#tools#isdebug()
-        call mx#tools#log('favoritshandler(' . string(a:ctx) . ')')
-    endif
-
-    if empty(a:ctx.char) && empty(a:ctx.cmd)
-        let a:ctx.candidates = g:mx#favorits
-        return 1
     endif
 endfunction "}}}
 
