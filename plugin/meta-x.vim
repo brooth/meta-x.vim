@@ -1,15 +1,18 @@
 " File: meta-x.vim
-" Description: Insane menu mode.
+" Description: Insane menu.
 " Author: Oleg Khalidov <brooth@gmail.com>
 " License: MIT
 
 " todos {{{
 " fixme: c-w
 " handle 'already running' case
+" sub favorits. related to part. commands
 " up/down - history, shortcut for history complete as well
 " sources. favorits and feedkeys first
 " abbr support. convert to command on <sps> and <cr>.
 " paste from registers
+" while/black list for autocompletion. '!^' black by default
+" substitude complete from current buff
 " candidates list type: flow, list, table
 " hl line if no candidates
 " '$' prefix for shell commands
@@ -31,7 +34,9 @@ function! MetaX(line) "{{{
 endfunction "}}}
 
 " mapping {{{
-cnoremap <C-t> <C-\>e(mx#tools#cutcmdline())<CR>
+cnoremap <C-t>c <C-\>e(mx#tools#cutcmdline())<CR>
+cnoremap <C-t>p <C-\>e(mx#tools#getcmdpos())<CR>
+cnoremap <C-t>P <C-\>e(mx#tools#setcmdpos())<CR>
 nnoremap <c-j> :call MetaX('')<cr>
 "}}}
 

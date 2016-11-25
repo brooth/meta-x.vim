@@ -9,10 +9,12 @@ call mx#tools#setdefault('g:mx#max_candidates', 50)
 call mx#tools#setdefault('g:mx#autocomplete', 1)
 call mx#tools#setdefault('g:mx#welcome_sign', ':')
 
+" favorits {{{
 call mx#tools#setdefault('g:mx#favorits', [
+    \   {'word': 'so %'},
     \   {'word': 'find'},
     \   {'word': 'write', 'short': 'w'},
-    \   {'word': 'quit', 'short': 'q'},
+    \   {'word': 'qall', 'short': 'qa'},
     \   ])
 
 for fav in g:mx#favorits
@@ -20,23 +22,21 @@ for fav in g:mx#favorits
         let fav['favorit'] = 1
     endif
 endfor
+" }}}
 
+" handlers {{{
 call mx#tools#setdefault('g:mx#handlers', {})
-call mx#tools#setdefault('g:mx#handlers.tabkey', {
-    \   'fn': 's:tabkeyhandler',
-    \   'priority': 25,
-    \   })
 call mx#tools#setdefault('g:mx#handlers.specialkeys', {
     \   'fn': 's:specialkeyshandler',
     \   'priority': 20,
     \   })
-call mx#tools#setdefault('g:mx#handlers.movekeys', {
-    \   'fn': 's:movekeyshandler',
-    \   'priority': 15,
+call mx#tools#setdefault('g:mx#handlers.tabkey', {
+    \   'fn': 's:tabkeyhandler',
+    \   'priority': 20,
     \   })
-call mx#tools#setdefault('g:mx#handlers.delkeys', {
-    \   'fn': 's:delkeyshandler',
-    \   'priority': 15,
+call mx#tools#setdefault('g:mx#handlers.feedkeys', {
+    \   'fn': 's:feedkeyshandler',
+    \   'priority': 5,
     \   })
 call mx#tools#setdefault('g:mx#handlers.candidates', {
     \   'fn': 's:candidateshandler',
@@ -52,7 +52,9 @@ for k in keys(g:mx#handlers)
     call add(s:handlers, val)
 endfor
 let s:handlers = sort(s:handlers, 'mx#tools#PriorityCompare')
+" }}}
 
+" sources {{{
 call mx#tools#setdefault('g:mx#sources', {})
 call mx#tools#setdefault('g:mx#sources.favorits', {
     \   'fn': 's:favoritsource',
@@ -70,6 +72,7 @@ for k in keys(g:mx#sources)
     let val.name = k
     call add(s:sources, val)
 endfor
+"}}}
 "}}}
 
 " vars {{{
@@ -93,8 +96,10 @@ function! mx#loop(ctx) " {{{
     if !get(a:ctx, 'complete') | let a:ctx.complete = g:mx#autocomplete | endif
     if !get(a:ctx, 'cursor') | let a:ctx.cursor = 0 | endif
 
-    while 1
+    let besafe = 100
+    while besafe > 0
         call mx#tools#log('------ loop -------')
+        let besafe += 1
 
         if empty(a:ctx.input)
             let a:ctx.pattern = a:ctx.cmd
@@ -215,8 +220,8 @@ endfunction "}}}
 function! s:feedkeysource(ctx) abort "{{{
     let candidates = []
     if !empty(a:ctx.pattern)
-        silent! call feedkeys(":" . a:ctx.pattern . "\<C-A>\<C-t>\<Esc>", 'x')
-        for word in split(g:mx#cutcmdline, ' ')
+        silent! call feedkeys(":" . a:ctx.pattern . "\<C-A>\<C-t>c\<Esc>", 'x')
+        for word in split(g:mx#cmdline, ' ')
             if word !~# '' && a:ctx.pattern !~# escape(word, '~')
                 call add(candidates, {'word': word})
             endif
@@ -285,75 +290,30 @@ function! s:specialkeyshandler(ctx) abort "{{{
             call feedkeys(':' . a:ctx.cmd . "\<CR>", '')
         endif
         return s:RESULT_EXIT
-    elseif a:ctx.input == 32 "space
-        let abbr = maparg(a:ctx.cmd, 'c', 1)
-        if !empty(abbr)
-            let a:ctx.cmd = abbr . ' '
-            let a:ctx.pattern = a:ctx.cmd
-        endif
     endif
 endfunction "}}}
 
-function! s:delkeyshandler(ctx) abort "{{{
+function! s:feedkeyshandler(ctx) abort "{{{
     if mx#tools#isdebug()
-        call mx#tools#log('delkeyshandler(' . string(a:ctx) . ')')
+        call mx#tools#log('feedkeyshandler(' . string(a:ctx) . ')')
     endif
 
-    if a:ctx.input is# "\<BS>"
-        if a:ctx.cursor >= len(a:ctx.cmd)
-            let a:ctx.pattern = a:ctx.cmd[:-2]
-        else
-            let list = split(a:ctx.cmd, '\zs')
-            call remove(list, a:ctx.cursor - 1)
-            let a:ctx.pattern = join(list, '')
-        endif
-        let a:ctx.cursor -= 1
-    elseif a:ctx.input is# "\<Del>" "
-        if a:ctx.cursor >= len(a:ctx.cmd)
-            let a:ctx.pattern = a:ctx.cmd[:-2]
-            let a:ctx.cursor -= 1
-        else
-            let list = split(a:ctx.cmd, '\zs')
-            call remove(list, a:ctx.cursor)
-            let a:ctx.pattern = join(list, '')
-        endif
-    elseif a:ctx.input == 21 "C-U
-        let a:ctx.pattern = a:ctx.cmd[a:ctx.cursor:]
-        let a:ctx.cursor = 0
-    elseif a:ctx.input == 23 "C-W
-        let pos = max([0, strridx(a:ctx.cmd, ' ', a:ctx.cursor - 1)])
-        let a:ctx.pattern = pos == 0 ? '' : a:ctx.cmd[:pos-1] . a:ctx.cmd[a:ctx.cursor:]
-        let a:ctx.cursor = pos
-    else
-        return
-    endif
+    if empty(a:ctx.input) | return | endif
 
-    let a:ctx.input = ''
+    let g:mx#cmdpos = a:ctx.cursor + 1
+    let keys = ":" . a:ctx.cmd . "\<C-t>P" .
+        \   (type(a:ctx.input) == 0 ? nr2char(a:ctx.input) : a:ctx.input) .
+        \   "\<C-t>p\<C-t>c\<Esc>"
+    call mx#tools#log('keys=' . keys)
+
+    silent! call feedkeys(keys, 'x')
+
+    call mx#tools#log('pos:' . g:mx#cmdpos)
+    let a:ctx.cursor = g:mx#cmdpos - 1
+    call mx#tools#log('line:' . g:mx#cmdline)
+    let a:ctx.pattern = g:mx#cmdline
+
     return s:RESULT_NOUPDATECURSOR
-endfunction "}}}
-
-function! s:movekeyshandler(ctx) abort "{{{
-    if mx#tools#isdebug()
-        call mx#tools#log('movekeyshandler(' . string(a:ctx) . ')')
-    endif
-
-    if a:ctx.input == 8 || a:ctx.input is# "\<left>"
-        let a:ctx.cursor = max([0, a:ctx.cursor - 1])
-        let a:ctx.input = ''
-        return or(or(s:RESULT_NOUPDATECURSOR, s:RESULT_BREAK), s:RESULT_NOAPPLYPATTERN)
-    elseif a:ctx.input == 12 || a:ctx.input is# "\<right>"
-        let a:ctx.cursor = min([len(a:ctx.cmd), a:ctx.cursor + 1])
-        let a:ctx.input = ''
-        return or(or(s:RESULT_NOUPDATECURSOR, s:RESULT_BREAK), s:RESULT_NOAPPLYPATTERN)
-    elseif a:ctx.input == 2 "C-b (bigin)
-        let a:ctx.cursor = 0
-        let a:ctx.input = ''
-        return or(or(s:RESULT_NOUPDATECURSOR, s:RESULT_BREAK), s:RESULT_NOAPPLYPATTERN)
-    elseif a:ctx.input == 5 "C-e (end)
-        let a:ctx.cursor = len(a:ctx.cmd)
-        let a:ctx.input = ''
-        return or(or(s:RESULT_NOUPDATECURSOR, s:RESULT_BREAK), s:RESULT_NOAPPLYPATTERN)
-    endif
 endfunction "}}}
 
 function! s:tabkeyhandler(ctx) abort "{{{
@@ -373,6 +333,7 @@ function! s:tabkeyhandler(ctx) abort "{{{
         if a:ctx.candidate_idx == -1
             call insert(a:ctx.candidates, {'word': a:ctx.cmd, 'visible': 0}, 0)
             let a:ctx.candidate_idx = 0
+            let a:ctx.complete_pos = max([0, strridx(a:ctx.cmd, ' ', a:ctx.cursor)])
         endif
 
         " if !a:ctx.complete
@@ -389,10 +350,9 @@ function! s:tabkeyhandler(ctx) abort "{{{
                 \   len(a:ctx.candidates) - 1 : a:ctx.candidate_idx - 1
         endif
 
-        let pos = max([0, strridx(a:ctx.cmd, ' ', a:ctx.cursor)])
         let word = a:ctx.candidates[a:ctx.candidate_idx].word
-        let a:ctx.cmd = pos == 0 ? word : a:ctx.cmd[:pos] . word
-        let a:ctx.cursor = pos
+        let a:ctx.cmd = a:ctx.complete_pos == 0 ? word : a:ctx.cmd[:a:ctx.complete_pos] . word
+        let a:ctx.cursor = a:ctx.complete_pos
         let a:ctx.input = ''
         return or(s:RESULT_BREAK, s:RESULT_NOAPPLYPATTERN)
     endif
