@@ -1,10 +1,12 @@
 " File: meta-x.vim
-" Description: Progressive cmdline. Inspired by desire to kick ass Helm-M-x.
+" Description: Insane menu mode.
 " Author: Oleg Khalidov <brooth@gmail.com>
 " License: MIT
 
 " todos {{{
-" rename to insane menu? or sane menu?
+" fixme: c-w
+" handle 'already running' case
+" up/down - history, shortcut for history complete as well
 " sources. favorits and feedkeys first
 " abbr support. convert to command on <sps> and <cr>.
 " paste from registers
@@ -15,9 +17,11 @@
 " }}}
 
 " syntax {{{
-hi def link MxSelCandidate WildMenu
-hi def link MxCandidates StatusLine
-
+hi def link MxCommand Macro
+hi def link MxWelcomeSign MxCommand
+hi def link MxComplete Comment
+hi def link MxCompleteSel Normal
+hi def link MxCursor Cursor
 " }}}
 
 function! MetaX(line) "{{{
@@ -28,7 +32,7 @@ endfunction "}}}
 
 " mapping {{{
 cnoremap <C-t> <C-\>e(mx#tools#cutcmdline())<CR>
-nnoremap <M-x> :call MetaX('')<cr>
+nnoremap <c-j> :call MetaX('')<cr>
 "}}}
 
 " vim: set et fdm=marker sts=4 sw=4:
