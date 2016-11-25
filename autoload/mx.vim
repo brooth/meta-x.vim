@@ -6,12 +6,13 @@
 " options "{{{
 call mx#tools#setdefault('g:mx#max_lines', 1)
 call mx#tools#setdefault('g:mx#max_candidates', 50)
+call mx#tools#setdefault('g:mx#autocomplete', 0)
+call mx#tools#setdefault('g:mx#welcome_sign', ':')
 
 call mx#tools#setdefault('g:mx#favorits', [
     \   {'word': 'find'},
     \   {'word': 'write', 'short': 'w'},
-    \   {'word': 'quite', 'short': 'q'},
-    \   {'word': 'Far', 'abbr': 'f'},
+    \   {'word': 'quit', 'short': 'q'},
     \   ])
 
 for fav in g:mx#favorits
@@ -24,6 +25,10 @@ call mx#tools#setdefault('g:mx#handlers', {})
 call mx#tools#setdefault('g:mx#handlers.specialkeys', {
     \   'fn': 's:specialkeyshandler',
     \   'priority': 20,
+    \   })
+call mx#tools#setdefault('g:mx#handlers.tabkey', {
+    \   'fn': 's:tabkeyhandler',
+    \   'priority': 25,
     \   })
 call mx#tools#setdefault('g:mx#handlers.default', {
     \   'fn': 's:defaulthandler',
@@ -47,6 +52,9 @@ call mx#tools#setdefault('g:mx#sources.favorits', {
 call mx#tools#setdefault('g:mx#sources.feedkeys', {
     \   'fn': 's:feedkeysource',
     \   })
+call mx#tools#setdefault('g:mx#sources.cabbrevs', {
+    \   'fn': 's:cabbrevsource',
+    \   })
 
 let s:sources = []
 for k in keys(g:mx#sources)
@@ -56,36 +64,43 @@ for k in keys(g:mx#sources)
 endfor
 "}}}
 
-function! mx#cutcmdline() "{{{
-    let s:cmdline = getcmdline()
-    call mx#tools#log('cut cmdline:' . s:cmdline)
-    return ''
-endfunction "}}}
+" vars {{{
+let s:RESULT_CANCEL = 0
+let s:RESULT_OK = 1
+let s:RESULT_BREAK = 2
+let s:RESULT_NOGETCHAR = 4
+let s:RESULT_NODRAW = 8
+"}}}
 
 function! mx#loop(ctx) " {{{
     if mx#tools#isdebug()
         call mx#tools#log('mx#start(' . string(a:ctx) . ')')
     endif
 
-    if !get(a:ctx, 'char')
-        let a:ctx.char = ''
-    endif
+    if !get(a:ctx, 'welcome_sign') | let a:ctx.welcome_sign = g:mx#welcome_sign | endif
+    if !get(a:ctx, 'char') | let a:ctx.char = '' | endif
+    if !get(a:ctx, 'candidates') | let a:ctx.candidates = [] | endif
+    if !get(a:ctx, 'candidate_idx') | let a:ctx.candidate_idx = -1 | endif
+    if !get(a:ctx, 'showmenu') | let a:ctx.showmenu = g:mx#autocomplete | endif
 
     while 1
-        let handled = -1
+        let result = s:RESULT_CANCEL
         for handler in s:handlers
-            let handled = call(function(handler.fn), [a:ctx])
-            if handled != 0
+            let result = or(result, call(function(handler.fn), [a:ctx]))
+            call mx#tools#log('result ' . result)
+            if result == s:RESULT_CANCEL || and(result, s:RESULT_BREAK) == s:RESULT_BREAK
                 break
             endif
         endfor
+        if result == s:RESULT_CANCEL | return | endif
 
-        if handled == -1
-            return
+        if and(result, s:RESULT_NODRAW) != s:RESULT_NODRAW
+            call s:drawcxt(a:ctx)
         endif
 
-        call s:drawcxt(a:ctx)
-        let a:ctx.char = handled != 2 ? getchar() : ''
+        if and(result, s:RESULT_NOGETCHAR) != s:RESULT_NOGETCHAR
+            let a:ctx.char = getchar()
+        endif
     endwhile
 endfunction "}}}
 
@@ -94,13 +109,13 @@ function! s:drawcxt(ctx) abort "{{{
         call mx#tools#log('drawcxt(' . string(a:ctx) . ')')
     endif
 
-    redraw
-    echohl MxCandidates
+    if a:ctx.showmenu
+        redraw
+        echohl MxCandidates
 
-    let chars = 0
-    let candidate_idx = 0
-    for candidate in get(a:ctx, 'candidates', [])
-        if get(candidate, 'visible', 1)
+        let chars = 0
+        let candidate_idx = 0
+        for candidate in a:ctx.candidates
             let out = candidate.word
             if (chars + len(out) + 2) / &columns > g:mx#max_lines - 1
                 echon ' >'
@@ -109,8 +124,8 @@ function! s:drawcxt(ctx) abort "{{{
             endif
 
             if !empty(chars)
-                echon ' '
-                let chars += 1
+                echon '  '
+                let chars += 2
             endif
 
             if candidate_idx == a:ctx.candidate_idx
@@ -123,11 +138,11 @@ function! s:drawcxt(ctx) abort "{{{
             if candidate_idx == a:ctx.candidate_idx
                 echohl MxCandidates
             endif
+            let candidate_idx += 1
+        endfor
+        if chars % &columns != 0
+            echon repeat(' ', (&columns - chars % &columns))
         endif
-        let candidate_idx += 1
-    endfor
-    if chars % &columns != 0
-        echon repeat(' ', (&columns - chars % &columns))
     endif
 
     echohl None
@@ -148,23 +163,34 @@ function! s:feedkeysource(ctx) abort "{{{
     let candidates = []
     if !empty(a:ctx.cmd)
         silent! call feedkeys(":" . a:ctx.cmd . "\<C-A>\<C-t>\<Esc>", 'x')
-        for word in split(s:cmdline, ' ')
+        for word in split(g:mx#cutcmdline, ' ')
             call add(candidates, {'word': word})
         endfor
     endif
     return candidates
 endfunction "}}}
 
+function! s:cabbrevsource(ctx) abort "{{{
+    let abbr = maparg(a:ctx.cmd, 'c', 1)
+    if !empty(abbr)
+        return [{'word': abbr, 'priority': 40}]
+    endif
+    return []
+endfunction "}}}
+
 function! s:defaulthandler(ctx) abort "{{{
     if mx#tools#isdebug()
         call mx#tools#log('defaulthandler(' . string(a:ctx) . ')')
     endif
-    if a:ctx.char != '' && type(a:ctx.char) != 0 " not a number
-        return
+
+    if !empty(a:ctx.char)
+        if type(nr2char(a:ctx.char)) != 1 | return s:RESULT_OK | endif
+        let a:ctx.cmd = a:ctx.cmd . nr2char(a:ctx.char)
+        let a:ctx.candidate_idx = -1
     endif
 
-    let a:ctx.cmd = a:ctx.cmd . nr2char(a:ctx.char)
-    let a:ctx.candidate_idx = -1
+    if !a:ctx.showmenu | return s:RESULT_OK | endif
+
     let candidates = []
     for source in s:sources
         let sourcecandidates = call(function(source.fn), [a:ctx])
@@ -179,9 +205,6 @@ function! s:defaulthandler(ctx) abort "{{{
             continue
         endif
         let candidate.priority = 0
-        if get(candidate, 'abbr', '') ==# a:ctx.cmd
-            let candidate.priority += 40
-        endif
         if get(candidate, 'favorit')
             let candidate.priority += 20
         endif
@@ -201,7 +224,7 @@ function! s:defaulthandler(ctx) abort "{{{
         let candidates = candidates[:g:mx#max_candidates]
     endif
     let a:ctx.candidates = candidates
-    return 1
+    return s:RESULT_OK
 endfunction "}}}
 
 function! s:specialkeyshandler(ctx) abort "{{{
@@ -211,35 +234,66 @@ function! s:specialkeyshandler(ctx) abort "{{{
 
     if a:ctx.char == 27 || a:ctx.char == 3 "Esc, C-c
         redraw
-        return -1
+        return s:RESULT_CANCEL
     elseif a:ctx.char == 13 "CR
         redraw
         if !empty(a:ctx.cmd)
-            exec a:ctx.cmd
+            call feedkeys(':' . a:ctx.cmd . "\<CR>", '')
         endif
-        return -1
-    elseif a:ctx.char == 9 || a:ctx.char is# "\<S-Tab>" "Tab
-        if a:ctx.candidate_idx == -1
-            let a:ctx.candidate_idx = 0
-            call insert(a:ctx.candidates,
-            \   {'word': a:ctx.cmd, 'priority': 100, 'visible': 0}, 0)
+        return s:RESULT_CANCEL
+    elseif a:ctx.char == 32 "space
+        let abbr = maparg(a:ctx.cmd, 'c', 1)
+        if !empty(abbr)
+            let a:ctx.cmd = abbr
         endif
-        if a:ctx.char == 9
-            let a:ctx.candidate_idx = len(a:ctx.candidates)-1 <= a:ctx.candidate_idx?
-                \   0 : a:ctx.candidate_idx+1
-        else
-            let a:ctx.candidate_idx = a:ctx.candidate_idx == 0?
-                \   len(a:ctx.candidates)-1 : a:ctx.candidate_idx-1
-        endif
-        let a:ctx.cmd = a:ctx.candidates[a:ctx.candidate_idx].word
-        return 1
     elseif a:ctx.char is# "\<BS>" "Backspace
         let a:ctx.cmd = a:ctx.cmd[:-2]
-        return 2
+        let a:ctx.char = ''
+        return s:RESULT_NOGETCHAR
     elseif a:ctx.char == 21 "C-U
         let a:ctx.cmd = ''
-        return 2
+        let a:ctx.char = ''
+        return s:RESULT_NOGETCHAR
     endif
+    return s:RESULT_OK
+endfunction "}}}
+
+function! s:tabkeyhandler(ctx) abort "{{{
+    if mx#tools#isdebug()
+        call mx#tools#log('tabkeyhandler(' . string(a:ctx) . ')')
+    endif
+
+    if a:ctx.char == 9 || a:ctx.char is# "\<S-Tab>" "Tab
+        if a:ctx.candidate_idx == -1
+            let a:ctx.cmdback = a:ctx.cmd
+        endif
+
+        if !a:ctx.showmenu
+            let a:ctx.showmenuback = a:ctx.showmenu
+            let a:ctx.showmenu = 1
+            let a:ctx.candidate_idx = 0
+            let a:ctx.char = ''
+            return or(s:RESULT_NODRAW, s:RESULT_NOGETCHAR)
+        endif
+
+        if a:ctx.char == 9
+            let a:ctx.candidate_idx = len(a:ctx.candidates) - 1 <= a:ctx.candidate_idx ?
+                \   -1 : a:ctx.candidate_idx + 1
+        else
+            let a:ctx.candidate_idx = a:ctx.candidate_idx == -1 ?
+                \   len(a:ctx.candidates) - 1 : a:ctx.candidate_idx - 1
+        endif
+
+        if a:ctx.candidate_idx == -1
+            let a:ctx.cmd = a:ctx.cmdback
+            let a:ctx.showmenu = get(a:ctx, 'showmenuback', 1)
+        else
+            let a:ctx.cmd = a:ctx.candidates[a:ctx.candidate_idx].word
+        endif
+
+        return s:RESULT_BREAK
+    endif
+    return s:RESULT_OK
 endfunction "}}}
 
 " vim: set et fdm=marker sts=4 sw=4:

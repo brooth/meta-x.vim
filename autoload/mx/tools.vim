@@ -26,10 +26,22 @@ function! mx#tools#log(msg)
 endfunction
 "}}}
 
+function! mx#tools#cutcmdline() "{{{
+    let g:mx#cutcmdline = getcmdline()
+    return ''
+endfunction "}}}
+
 function! mx#tools#setdefault(var, val) abort "{{{
     if !exists(a:var)
         exec 'let '.a:var.' = '.string(a:val)
     endif
+endfunction "}}}
+
+function! mx#tools#echoerr(msg) abort "{{{
+    redraw
+    echohl ErrorMsg
+    echomsg a:msg
+    echohl None
 endfunction "}}}
 
 function! mx#tools#PriorityCompare(i1, i2) "{{{

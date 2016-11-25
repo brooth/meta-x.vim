@@ -4,6 +4,7 @@
 " License: MIT
 
 " todos {{{
+" rename to insane menu? or sane menu?
 " sources. favorits and feedkeys first
 " abbr support. convert to command on <sps> and <cr>.
 " paste from registers
@@ -21,17 +22,12 @@ hi def link MxCandidates StatusLine
 
 function! MetaX(line) "{{{
     call mx#tools#log('============== META-X (' . a:line . ') ===============')
-
-    let ctx = {
-        \   'cmd' : a:line,
-        \   'candidate_idx': -1,
-        \   'welcome_sign': ':',
-        \   }
+    let ctx = {'cmd' : a:line}
     call mx#loop(ctx)
 endfunction "}}}
 
 " mapping {{{
-cnoremap <C-t> <C-\>e(mx#cutcmdline())<CR>
+cnoremap <C-t> <C-\>e(mx#tools#cutcmdline())<CR>
 nnoremap <M-x> :call MetaX('')<cr>
 "}}}
 
