@@ -6,8 +6,14 @@
 " options "{{{
 call mx#tools#setdefault('g:mx#max_lines', 1)
 call mx#tools#setdefault('g:mx#max_candidates', 50)
-call mx#tools#setdefault('g:mx#autocomplete', 1)
+call mx#tools#setdefault('g:mx#show_complete', 1)
 call mx#tools#setdefault('g:mx#welcome_sign', ':')
+
+" call mx#tools#setdefault('g:mx#auto_pairs', [
+"     \   {'open': '\(', 'close': '\)'}
+"     \   {'open': '(', 'close': ')'}
+"     \   {'open': '[', 'close': ']'}
+"     \   ])
 
 " favorits {{{
 call mx#tools#setdefault('g:mx#favorits', [
@@ -30,16 +36,21 @@ call mx#tools#setdefault('g:mx#handlers.specialkeys', {
     \   'fn': 's:specialkeyshandler',
     \   'priority': 20,
     \   })
-call mx#tools#setdefault('g:mx#handlers.tabkey', {
-    \   'fn': 's:tabkeyhandler',
-    \   'priority': 20,
+call mx#tools#setdefault('g:mx#handlers.completion', {
+    \   'fn': 's:completionhandler',
+    \   'priority': 25,
     \   })
 call mx#tools#setdefault('g:mx#handlers.feedkeys', {
     \   'fn': 's:feedkeyshandler',
-    \   'priority': 5,
+    \   'priority': 15,
     \   })
 call mx#tools#setdefault('g:mx#handlers.candidates', {
     \   'fn': 's:candidateshandler',
+    \   'priority': 10,
+    \   })
+call mx#tools#setdefault('g:mx#handlers.formatter', {
+    \   'fn': 's:formathandler',
+    \   'priority': 5,
     \   })
 
 let s:handlers = []
@@ -93,7 +104,7 @@ function! mx#loop(ctx) " {{{
     if !get(a:ctx, 'char') | let a:ctx.input = '' | endif
     if !get(a:ctx, 'candidates') | let a:ctx.candidates = [] | endif
     if !get(a:ctx, 'candidate_idx') | let a:ctx.candidate_idx = -1 | endif
-    if !get(a:ctx, 'complete') | let a:ctx.complete = g:mx#autocomplete | endif
+    if !get(a:ctx, 'complete') | let a:ctx.complete = g:mx#show_complete | endif
     if !get(a:ctx, 'cursor') | let a:ctx.cursor = 0 | endif
 
     let besafe = 100
@@ -124,7 +135,6 @@ function! mx#loop(ctx) " {{{
         if and(result, s:RESULT_NOAPPLYPATTERN) != s:RESULT_NOAPPLYPATTERN
             call mx#tools#log('apply pattern')
             let a:ctx.cmd = a:ctx.pattern
-            let a:ctx.candidate_idx = -1
         endif
 
         if and(result, s:RESULT_NOUPDATECURSOR) != s:RESULT_NOUPDATECURSOR
@@ -150,6 +160,8 @@ function! s:drawcmdline(ctx) abort "{{{
 
     let chars = 1
     redraw
+
+    " command {{{
     echohl MxWelcomeSign
     echon a:ctx.welcome_sign
     let chars += len(a:ctx.welcome_sign)
@@ -162,55 +174,46 @@ function! s:drawcmdline(ctx) abort "{{{
         if i == a:ctx.cursor | echohl MxCommand | endif
     endfor
     let chars += len(cmd)
+    " }}}
 
-    "sepatator
+    "sepatator {{{
     echon ' '
     let chars += 1
+    " }}}
 
-    "complete
-    echohl MxComplete
+    if !empty(a:ctx.candidates) "complete {{{
+        echohl MxComplete
+        echon '{'
+        let chars += 1
+        let shift = a:ctx.candidate_idx + 1
+        let len = len(a:ctx.candidates)
+        for idx in range(len)
+            if idx + shift >= len | let shift = -(len - a:ctx.candidate_idx - 1) | endif
+            let candidate = a:ctx.candidates[idx + shift]
+            let out = ' ' . candidate.word . ' '
 
-    echon '{'
-    let chars += 1
-    let candidate_idx = -1
-    for candidate in a:ctx.candidates
-        let candidate_idx += 1
-        if !get(candidate, 'visible', 1) | continue | endif
+            if (chars + len(out) + 2 + 1) / &columns > g:mx#max_lines - 1
+                echon '..'
+                let chars += 2
+                break
+            endif
 
-        if candidate_idx == a:ctx.candidate_idx
-            echohl MxCompleteSel
-        endif
-
-        let out = ' ' . candidate.word . ' '
-
-        if (chars + len(out) + 2 + 1) / &columns > g:mx#max_lines - 1
-            echon '..'
-            let chars += 2
-           break
-        endif
-
-        echon out
-        let chars += len(out)
-
-        if candidate_idx == a:ctx.candidate_idx
-            echohl MxComplete
-        endif
-    endfor
-
-    echon '}'
-    let chars += 1
+            echon out
+            let chars += len(out)
+        endfor
+        echon '}'
+        let chars += 1
+    endif " }}}
 
     "empty space
     echohl None
-    if chars % &columns != 0
-        echon repeat(' ', (&columns - chars % &columns))
-    endif
+    echon repeat(' ', (&columns - chars % &columns))
 endfunction "}}}
 
 function! s:favoritsource(ctx) abort "{{{
     let candidates = []
     for fav in g:mx#favorits
-        if '^' . fav.word =~? escape(a:ctx.pattern, '~')
+        if empty(a:ctx.pattern) || strridx(tolower(fav.word), tolower(a:ctx.pattern)) == 0
             call add(candidates, copy(fav))
         endif
     endfor
@@ -220,9 +223,11 @@ endfunction "}}}
 function! s:feedkeysource(ctx) abort "{{{
     let candidates = []
     if !empty(a:ctx.pattern)
-        silent! call feedkeys(":" . a:ctx.pattern . "\<C-A>\<C-t>c\<Esc>", 'x')
+            silent! call feedkeys(":" . a:ctx.pattern . "\<C-A>\<C-t>c\<Esc>", 'x')
+
         for word in split(g:mx#cmdline, ' ')
-            if word !~# '' && a:ctx.pattern !~# escape(word, '~')
+            if strridx(word, '') == -1 &&
+                    \   strridx(tolower(a:ctx.pattern), tolower(word)) == -1
                 call add(candidates, {'word': word})
             endif
         endfor
@@ -280,11 +285,11 @@ function! s:specialkeyshandler(ctx) abort "{{{
         call mx#tools#log('specialkeyshandler(' . string(a:ctx) . ')')
     endif
 
-    if a:ctx.input == 27 || a:ctx.input == 3 "Esc, C-c
+    if a:ctx.input == 27 || a:ctx.input == 3 "Esc, C-c, C-j
         redraw
         echon ''
         return s:RESULT_EXIT
-    elseif a:ctx.input == 13 "CR
+    elseif a:ctx.input == 13 || a:ctx.input == 10 "CR, C-j
         redraw
         if !empty(a:ctx.cmd)
             call feedkeys(':' . a:ctx.cmd . "\<CR>", '')
@@ -316,24 +321,28 @@ function! s:feedkeyshandler(ctx) abort "{{{
     return s:RESULT_NOUPDATECURSOR
 endfunction "}}}
 
-function! s:tabkeyhandler(ctx) abort "{{{
+function! s:formathandler(ctx) abort "{{{
     if mx#tools#isdebug()
-        call mx#tools#log('tabkeyhandler(' . string(a:ctx) . ')')
+        call mx#tools#log('formathandler(' . string(a:ctx) . ')')
+    endif
+endfunction "}}}
+
+function! s:completionhandler(ctx) abort "{{{
+    if mx#tools#isdebug()
+        call mx#tools#log('completionhandler(' . string(a:ctx) . ')')
     endif
 
-    if a:ctx.input == 9 || a:ctx.input is# "\<S-Tab>" "Tab
+    if a:ctx.input == 14 "C-n
+       let a:ctx.input = 9
+    elseif a:ctx.input == 16 "C-p
+       let a:ctx.input = "\<S-Tab>"
+    endif
+
+    if a:ctx.input == 9 || a:ctx.input is# "\<S-Tab>"
         if empty(a:ctx.candidates)
+            let a:ctx.input = ''
+            let a:ctx.pattern = ''
             return s:RESULT_NOAPPLYPATTERN
-        endif
-        if len(a:ctx.candidates) == 1
-            let a:ctx.input = 32
-            let a:ctx.pattern = a:ctx.cmd . ' '
-            return
-        endif
-        if a:ctx.candidate_idx == -1
-            call insert(a:ctx.candidates, {'word': a:ctx.cmd, 'visible': 0}, 0)
-            let a:ctx.candidate_idx = 0
-            let a:ctx.complete_pos = max([0, strridx(a:ctx.cmd, ' ', a:ctx.cursor)])
         endif
 
         " if !a:ctx.complete
@@ -342,20 +351,44 @@ function! s:tabkeyhandler(ctx) abort "{{{
         "     return or(s:RESULT_NODRAWCMDLINE, s:RESULT_NOINPUT)
         " endif
 
-        if a:ctx.input == 9
-            let a:ctx.candidate_idx = len(a:ctx.candidates) - 1 <= a:ctx.candidate_idx ?
-                \   0 : a:ctx.candidate_idx + 1
+        if a:ctx.candidate_idx == -1
+            let a:ctx.candidate_idx = 0
+            let a:ctx.cmdback = a:ctx.cmd
+            let a:ctx.completeback = a:ctx.complete
+            let a:ctx.complete = 0
+            let a:ctx.completepos = max([0, strridx(a:ctx.cmd, ' ', a:ctx.cursor)])
         else
-            let a:ctx.candidate_idx = a:ctx.candidate_idx == 0 ?
-                \   len(a:ctx.candidates) - 1 : a:ctx.candidate_idx - 1
+            if a:ctx.input == 9
+                let a:ctx.candidate_idx = len(a:ctx.candidates) - 1 <= a:ctx.candidate_idx ?
+                    \   0 : a:ctx.candidate_idx + 1
+            else
+                let a:ctx.candidate_idx = a:ctx.candidate_idx == 0 ?
+                    \   len(a:ctx.candidates) - 1 : a:ctx.candidate_idx - 1
+            endif
         endif
 
         let word = a:ctx.candidates[a:ctx.candidate_idx].word
-        let a:ctx.cmd = a:ctx.complete_pos == 0 ? word : a:ctx.cmd[:a:ctx.complete_pos] . word
-        let a:ctx.cursor = a:ctx.complete_pos
+        let a:ctx.cmd = a:ctx.completepos == 0 ? word : a:ctx.cmd[:a:ctx.completepos] . word
         let a:ctx.input = ''
-        return or(s:RESULT_BREAK, s:RESULT_NOAPPLYPATTERN)
+        let a:ctx.pattern = ''
+        return s:RESULT_NOAPPLYPATTERN
     endif
+
+    if a:ctx.candidate_idx != -1
+        if a:ctx.input == 27
+            let a:ctx.cmd = a:ctx.cmdback
+            let a:ctx.pattern = a:ctx.cmd
+            let a:ctx.input = ''
+        endif
+
+        let a:ctx.complete = a:ctx.completeback
+        let a:ctx.candidate_idx = -1
+        unlet a:ctx.cmdback
+        unlet a:ctx.completeback
+        unlet a:ctx.completepos
+        return 0
+    endif
+
 endfunction "}}}
 
 " vim: set et fdm=marker sts=4 sw=4:

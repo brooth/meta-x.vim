@@ -4,26 +4,30 @@
 " License: MIT
 
 " todos {{{
-" fixme: c-w
-" handle 'already running' case
-" sub favorits. related to part. commands
+" BETA 1
 " up/down - history, shortcut for history complete as well
-" sources. favorits and feedkeys first
-" abbr support. convert to command on <sps> and <cr>.
 " paste from registers
+" numeric shortcuts, <C-1> executes first candidate
+" sub favorits. related to part. commands
 " while/black list for autocompletion. '!^' black by default
+" substitute (and others) preview. show first found item and result above
 " substitude complete from current buff
-" candidates list type: flow, list, table
-" hl line if no candidates
 " '$' prefix for shell commands
 " auto cancel cmd entering by timeout. ability to continue cancelled cmd
+" try to hide cursor if possible
+" find all buildin command abbrevs. auto +10 priority if matched.
+"   show like "h[elp]" in completion
+" BETA 2
+" auto priority by MRU
+" multiple complete drawers (cycle, flow, list, table)
+" auto pairs
+" snippets: ":s -> :s/{0}/{1}/{3='g'}" ; jump between {} by tab
 " }}}
 
 " syntax {{{
 hi def link MxCommand Macro
 hi def link MxWelcomeSign MxCommand
 hi def link MxComplete Comment
-hi def link MxCompleteSel Normal
 hi def link MxCursor Cursor
 " }}}
 
