@@ -14,32 +14,31 @@ function! mx#handlers#easycomplete#handle(ctx) abort
             return or(g:MX_RES_BREAK, g:MX_RES_NOAPPLYPATTERN)
         endif
 
-        if type(a:ctx.input) == 0
-            let key = nr2char(a:ctx.input)
-            let keycandidate = {}
-            for candidate in a:ctx.candidates
-                let easykey = get(candidate, 'easykey', -1)
-                if easykey == -1 | continue | endif
-                if empty(keycandidate) && key == candidate.word[easykey]
-                    let keycandidate = candidate
-                endif
-                unlet candidate.easykey
-            endfor
-        endif
-
+        let key = nr2char(a:ctx.input)
+        let keycandidate = {}
+        for candidate in a:ctx.candidates
+            let easykey = get(candidate, 'easykey', -1)
+            if easykey == -1 | continue | endif
+            if empty(keycandidate) && key == candidate.word[easykey]
+                let keycandidate = candidate
+            endif
+            unlet candidate.easykey
+        endfor
         if !empty(keycandidate)
             let a:ctx.cmd = a:ctx.easycompletepos == 0 ?
                         \   keycandidate.word :
                         \   a:ctx.cmd[:a:ctx.easycompletepos] . keycandidate.word
             let a:ctx.input = a:ctx.easycomplete == 1 ? 13 : 32
             let a:ctx.cursor = len(a:ctx.cmd)
+        endif
+
+        if a:ctx.input == 27 "Esc
+            let a:ctx.input = ''
             let a:ctx.pattern = a:ctx.cmd
-            unlet a:ctx.easycomplete
-            return
         endif
 
         unlet a:ctx.easycomplete
-        return or(g:MX_RES_BREAK, g:MX_RES_NOAPPLYPATTERN)
+        return
     endif
 
     if a:ctx.input == 25 "C-y

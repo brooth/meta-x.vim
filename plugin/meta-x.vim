@@ -5,11 +5,11 @@
 
 " todos {{{
 " BETA 1
+" buffer handler, show number + easycomplete?
 " up/down - history, shortcut for history complete as well
 " paste from registers
 " sub favorits. related to part. commands
 " while/black list for autocompletion. '!^' black by default
-" buffer handler, show number + easycomplete?
 " substitute (and others) preview. show first found item and result above
 " substitude complete from current buff
 " '$' prefix for shell commands
