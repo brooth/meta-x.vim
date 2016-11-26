@@ -5,10 +5,8 @@
 
 " todos {{{
 " BETA 1
-" move handlers, sources and drawers to autoload files
 " up/down - history, shortcut for history complete as well
 " paste from registers
-" numeric shortcuts, <C-1> executes first candidate
 " sub favorits. related to part. commands
 " while/black list for autocompletion. '!^' black by default
 " substitute (and others) preview. show first found item and result above
@@ -27,9 +25,9 @@
 
 " syntax {{{
 hi def link MxCommand Macro
-hi def link MxWelcomeSign MxCommand
 hi def link MxComplete Comment
 hi def link MxCursor Cursor
+hi def link MxEasyKey Keyword
 " }}}
 
 function! MetaX(line) "{{{

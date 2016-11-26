@@ -19,13 +19,17 @@ call mx#tools#setdefault('g:mx#drawer', 'cycle')
 
 " handlers {{{
 call mx#tools#setdefault('g:mx#handlers', {})
-call mx#tools#setdefault('g:mx#handlers.specialkeys', {
-    \   'fn': 'mx#handlers#specialkeys#handle',
-    \   'priority': 20,
+call mx#tools#setdefault('g:mx#handlers.easycomplete', {
+    \   'fn': 'mx#handlers#easycomplete#handle',
+    \   'priority': 30,
     \   })
 call mx#tools#setdefault('g:mx#handlers.completion', {
     \   'fn': 'mx#handlers#completion#handle',
     \   'priority': 25,
+    \   })
+call mx#tools#setdefault('g:mx#handlers.specialkeys', {
+    \   'fn': 'mx#handlers#specialkeys#handle',
+    \   'priority': 20,
     \   })
 call mx#tools#setdefault('g:mx#handlers.feedkeys', {
     \   'fn': 'mx#handlers#feedkeys#handle',
