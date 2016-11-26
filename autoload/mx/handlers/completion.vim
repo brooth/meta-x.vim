@@ -3,7 +3,7 @@
 " Author: Oleg Khalidov <brooth@gmail.com>
 " License: MIT
 
-function! mx#handlers#completion#handle(ctx) abort "{{{
+function! mx#handlers#completion#handle(ctx) abort
     if mx#tools#isdebug()
         call mx#tools#log('mx#handlers#completion(' . string(a:ctx) . ')')
     endif
@@ -47,11 +47,16 @@ function! mx#handlers#completion#handle(ctx) abort "{{{
         let a:ctx.cmd = a:ctx.completepos == 0 ? word : a:ctx.cmd[:a:ctx.completepos] . word
         let a:ctx.input = ''
         let a:ctx.pattern = ''
+
+        if len(a:ctx.candidates) == 1
+            let a:ctx.candidates = []
+        endif
+
         return g:MX_RES_NOAPPLYPATTERN
     endif
 
     if a:ctx.candidate_idx != -1
-        if a:ctx.input == 27
+        if a:ctx.input == 27 "Esc
             let a:ctx.cmd = a:ctx.cmdback
             let a:ctx.pattern = a:ctx.cmd
             let a:ctx.input = ''
@@ -64,7 +69,4 @@ function! mx#handlers#completion#handle(ctx) abort "{{{
         unlet a:ctx.completepos
         return 0
     endif
-
-endfunction "}}}
-
-" vim: set et fdm=marker sts=4 sw=4:
+endfunction

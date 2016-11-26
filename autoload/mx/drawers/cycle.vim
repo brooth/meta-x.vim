@@ -30,11 +30,11 @@ function! mx#drawers#cycle#draw(ctx) abort
 
         let shift = a:ctx.candidate_idx + 1
         let len = len(a:ctx.candidates)
+        let easycomplete = get(a:ctx, 'easycomplete')
         for idx in range(len)
             if idx + shift >= len | let shift = -(len - a:ctx.candidate_idx - 1) | endif
             let candidate = a:ctx.candidates[idx + shift]
             let easykey = get(candidate, 'easykey', -1)
-            if get(a:ctx, 'easycomplete') && easykey == -1 | continue | endif
 
             let out = ' ' . candidate.word . ' '
 
@@ -46,7 +46,9 @@ function! mx#drawers#cycle#draw(ctx) abort
                 echon out
             else
                 echon out[:easykey]
-                echohl MxEasyKey | echon out[easykey + 1] | echohl MxComplete
+                if easycomplete == 1 | echohl MxEasyRun | else | echohl MxEasyComplete | endif
+                echon out[easykey + 1]
+                echohl MxComplete
                 echon out[easykey + 2:]
             endif
             let chars += len(out)

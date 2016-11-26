@@ -1,5 +1,5 @@
 " File: meta-x.vim
-" Description: Insane menu.
+" Description: insane.vim - Don't be wild. Be insane!
 " Author: Oleg Khalidov <brooth@gmail.com>
 " License: MIT
 
@@ -9,6 +9,7 @@
 " paste from registers
 " sub favorits. related to part. commands
 " while/black list for autocompletion. '!^' black by default
+" buffer handler, show number + easycomplete?
 " substitute (and others) preview. show first found item and result above
 " substitude complete from current buff
 " '$' prefix for shell commands
@@ -27,7 +28,8 @@
 hi def link MxCommand Macro
 hi def link MxComplete Comment
 hi def link MxCursor Cursor
-hi def link MxEasyKey Keyword
+hi def link MxEasyRun Keyword
+hi def link MxEasyComplete Include
 " }}}
 
 function! MetaX(line) "{{{
