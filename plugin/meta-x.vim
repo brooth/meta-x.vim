@@ -5,6 +5,7 @@
 
 " todos {{{
 " BETA 1
+" move handlers, sources and drawers to autoload files
 " up/down - history, shortcut for history complete as well
 " paste from registers
 " numeric shortcuts, <C-1> executes first candidate
