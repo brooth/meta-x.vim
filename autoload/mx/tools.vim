@@ -5,12 +5,10 @@
 
 "logging {{{
 let s:debug = exists('g:mx#debug')? g:mx#debug : 1
-let s:debugfile = $HOME.'/meta-x.vim.log'
+let s:debugfile = $HOME.'/insane.vim.log'
 
 if s:debug
-    exec 'redir! > ' . s:debugfile
-    silent echon "debug enabled!\n"
-    redir END
+    call writefile(['debug enabled!'], s:debugfile)
 endif
 
 function! mx#tools#isdebug()
@@ -19,9 +17,7 @@ endfunction
 
 function! mx#tools#log(msg)
     if s:debug
-        exec 'redir >> ' . s:debugfile
-        silent echon a:msg."\n"
-        redir END
+        call writefile(['[' . strftime("%T") . '] ' .a:msg], s:debugfile, "a")
     endif
 endfunction
 "}}}
@@ -44,6 +40,12 @@ endfunction "}}}
 function! mx#tools#setdefault(var, val) abort "{{{
     if !exists(a:var)
         exec 'let '.a:var.' = '.string(a:val)
+    endif
+endfunction "}}}
+
+function! mx#tools#setdictdefault(dict, key, val) abort "{{{
+    if !has_key(a:dict, a:key)
+        let a:dict[a:key] = a:val
     endif
 endfunction "}}}
 

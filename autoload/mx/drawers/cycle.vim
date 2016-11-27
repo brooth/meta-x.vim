@@ -24,6 +24,30 @@ function! mx#drawers#cycle#draw(ctx) abort
 
     echon ' ' | let chars += 1
 
+    let info = get(a:ctx, 'info', '')
+    if !empty(info)
+        echohl MxInfoMsg
+        echon info | let chars += strdisplaywidth(info)
+        echohl None
+        echon ' ' | let chars += 1
+    endif
+
+    let warn = get(a:ctx, 'warn', '')
+    if !empty(warn)
+        echohl MxWarnMsg
+        echon warn | let chars += strdisplaywidth(warn)
+        echohl None
+        echon ' ' | let chars += 1
+    endif
+
+    let error = get(a:ctx, 'error', '')
+    if !empty(error)
+        echohl MxErrorMsg
+        echon error | let chars += strdisplaywidth(error)
+        echohl None
+        echon ' ' | let chars += 1
+    endif
+
     if !empty(a:ctx.candidates)
         echohl MxComplete
         echon '{' | let chars += 1
@@ -38,8 +62,10 @@ function! mx#drawers#cycle#draw(ctx) abort
 
             let out = ' ' . candidate.word . ' '
 
-            if (chars + strdisplaywidth(out) + 2 + 1) / &columns > g:mx#max_lines - 1
-                echon '..' | let chars += 2 | break
+            if (chars + strdisplaywidth(out) + 1) / &columns > g:mx#max_lines - 1
+                let out =  out[:&columns * g:mx#max_lines - chars - 5] . '..'
+                echon out | let chars += strdisplaywidth(out)
+                break
             endif
 
             if easykey == -1

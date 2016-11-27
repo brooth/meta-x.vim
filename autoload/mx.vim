@@ -19,6 +19,10 @@ call mx#tools#setdefault('g:mx#drawer', 'cycle')
 
 " handlers {{{
 call mx#tools#setdefault('g:mx#handlers', {})
+call mx#tools#setdefault('g:mx#handlers.register', {
+    \   'fn': 'mx#handlers#register#handle',
+    \   'priority': 35,
+    \   })
 call mx#tools#setdefault('g:mx#handlers.easycomplete', {
     \   'fn': 'mx#handlers#easycomplete#handle',
     \   'priority': 30,
@@ -76,17 +80,18 @@ let g:MX_RES_NOAPPLYPATTERN = 32
 
 function! mx#loop(ctx) " {{{
     if mx#tools#isdebug()
-        call mx#tools#log('mx#start(' . string(a:ctx) . ')')
+        call mx#tools#log('===================================================')
+        call mx#tools#log('mx#loop(' . string(a:ctx) . ')')
     endif
 
-    if !get(a:ctx, 'cmd') | let a:ctx.cmd = '' | endif
-    if !get(a:ctx, 'welcome_sign') | let a:ctx.welcome_sign = g:mx#welcome_sign | endif
-    if !get(a:ctx, 'char') | let a:ctx.input = '' | endif
-    if !get(a:ctx, 'candidates') | let a:ctx.candidates = [] | endif
-    if !get(a:ctx, 'candidate_idx') | let a:ctx.candidate_idx = -1 | endif
-    if !get(a:ctx, 'complete') | let a:ctx.complete = g:mx#show_complete | endif
-    if !get(a:ctx, 'cursor') | let a:ctx.cursor = 0 | endif
-    if !get(a:ctx, 'drawer') | let a:ctx.drawer = g:mx#drawer | endif
+    call mx#tools#setdictdefault(a:ctx, 'cmd', '')
+    call mx#tools#setdictdefault(a:ctx, 'welcome_sign', g:mx#welcome_sign)
+    call mx#tools#setdictdefault(a:ctx, 'candidates', [])
+    call mx#tools#setdictdefault(a:ctx, 'candidate_idx', -1)
+    call mx#tools#setdictdefault(a:ctx, 'input', '')
+    call mx#tools#setdictdefault(a:ctx, 'cursor', 0)
+    call mx#tools#setdictdefault(a:ctx, 'complete', g:mx#show_complete)
+    call mx#tools#setdictdefault(a:ctx, 'drawer', g:mx#drawer)
 
     let besafe = 500
     while besafe > 0
@@ -106,7 +111,9 @@ function! mx#loop(ctx) " {{{
             let result = or(result, call(function(handler.fn), [a:ctx]))
             call mx#tools#log('result ' . result)
             if and(result, g:MX_RES_EXIT) == g:MX_RES_EXIT
-                return
+                redraw
+                echon ''
+                return a:ctx
             endif
             if and(result, g:MX_RES_BREAK) == g:MX_RES_BREAK
                 break

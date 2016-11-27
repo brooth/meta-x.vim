@@ -5,6 +5,10 @@
 
 " todos {{{
 " BETA 1
+" remove pattern from ctx?
+" handler special chars, <CR> espesially
+" FIXME: paste text with return expression (CR in cmd issue)
+" c-c escape all nested modes
 " 'cmd' in candidates. use instead of 'word' if presented
 " up/down - history, shortcut for history complete as well
 " paste from registers
@@ -32,6 +36,9 @@ hi def link MxComplete Comment
 hi def link MxCursor Cursor
 hi def link MxEasyRun Keyword
 hi def link MxEasyComplete Include
+hi def link MxInfoMsg String
+hi def link MxWarnMsg Special
+hi def link MxErrorMsg Error
 " }}}
 
 function! MetaX(line) "{{{

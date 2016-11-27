@@ -20,7 +20,7 @@ function! mx#handlers#candidates#handle(ctx) abort
         call mx#tools#log('mx#handlers#candidates#handle(' . string(a:ctx) . ')')
     endif
 
-    if !a:ctx.complete || type(nr2char(a:ctx.input)) != 1 | return | endif
+    if !a:ctx.complete | return | endif
 
     let candidates = []
     for source in s:sources
