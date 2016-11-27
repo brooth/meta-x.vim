@@ -47,5 +47,5 @@ function! mx#handlers#history#handle(ctx) abort
         endif
     endfor
 
-    return or(g:MX_RES_NOAPPLYPATTERN, g:MX_RES_BREAK)
+    return g:MX_RES_BREAK
 endfunction

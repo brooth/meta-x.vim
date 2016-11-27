@@ -11,7 +11,7 @@ function! mx#handlers#easycomplete#handle(ctx) abort
     if get(a:ctx, 'easycomplete')
         if a:ctx.input == 25 "C-y - switch mode
             let a:ctx.easycomplete = a:ctx.easycomplete == 1 ? 2 : 1
-            return or(g:MX_RES_BREAK, g:MX_RES_NOAPPLYPATTERN)
+            return g:MX_RES_BREAK
         endif
 
         let key = nr2char(a:ctx.input)
@@ -34,7 +34,6 @@ function! mx#handlers#easycomplete#handle(ctx) abort
 
         if a:ctx.input == 27 "Esc
             let a:ctx.input = ''
-            let a:ctx.pattern = a:ctx.cmd
         endif
 
         unlet a:ctx.easycomplete
@@ -57,6 +56,6 @@ function! mx#handlers#easycomplete#handle(ctx) abort
                 endfor
             endfor
         endif
-        return or(g:MX_RES_BREAK, g:MX_RES_NOAPPLYPATTERN)
+        return g:MX_RES_BREAK
     endif
 endfunction

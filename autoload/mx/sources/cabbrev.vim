@@ -4,7 +4,7 @@
 " License: MIT
 
 function! mx#sources#cabbrev#gather(ctx) abort
-    let abbr = maparg(a:ctx.pattern, 'c', 1)
+    let abbr = maparg(a:ctx.cmd, 'c', 1)
     if !empty(abbr)
         return [{'word': abbr, 'priority': 40}]
     endif

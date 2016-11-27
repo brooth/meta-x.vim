@@ -14,14 +14,11 @@ function! mx#handlers#feedkeys#handle(ctx) abort
     let keys = ":" . a:ctx.cmd . "\<C-t>P" .
         \   (type(a:ctx.input) == 0 ? nr2char(a:ctx.input) : a:ctx.input) .
         \   "\<C-t>p\<C-t>c\<Esc>"
-    call mx#tools#log('keys=' . keys)
 
     silent! call feedkeys(keys, 'x')
 
-    call mx#tools#log('pos:' . g:mx#cmdpos)
     let a:ctx.cursor = g:mx#cmdpos - 1
-    call mx#tools#log('line:' . g:mx#cmdline)
-    let a:ctx.pattern = g:mx#cmdline
+    let a:ctx.cmd = g:mx#cmdline
 
     return g:MX_RES_NOUPDATECURSOR
 endfunction

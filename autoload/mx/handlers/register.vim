@@ -13,7 +13,6 @@ function! mx#handlers#register#handle(ctx) abort
         let regctx.info = '<paste>'
         let regctx.registermode = 1
         let regctx.input = ''
-        let regctx.pattern = a:ctx.cmd
         let regctx.candidates = []
         let regresult = mx#loop(regctx)
         if mx#tools#isdebug()
@@ -24,7 +23,6 @@ function! mx#handlers#register#handle(ctx) abort
         elseif regresult.input == 3 "C-c
             return g:MX_RES_EXIT
         endif
-        let a:ctx.pattern = a:ctx.cmd
         let a:ctx.input = ''
         let a:ctx.cursor = len(a:ctx.cmd)
         return
@@ -47,7 +45,6 @@ function! mx#handlers#register#handle(ctx) abort
                 let expregctx.welcome_sign = '='
                 let expregctx.cmd = ''
                 let expregctx.input = ''
-                let expregctx.pattern = a:ctx.cmd
                 let expregctx.candidates = []
                 let expregresult = mx#loop(expregctx)
                 if mx#tools#isdebug()
@@ -69,7 +66,7 @@ function! mx#handlers#register#handle(ctx) abort
                     return g:MX_RES_EXIT
                 catch
                     let a:ctx.error = v:exception
-                    return or(g:MX_RES_NOAPPLYPATTERN, g:MX_RES_BREAK)
+                    return g:MX_RES_BREAK
                 endtry
             endif
             return

@@ -23,8 +23,7 @@ function! mx#handlers#completion#handle(ctx) abort
 
         if empty(a:ctx.candidates)
             let a:ctx.input = ''
-            let a:ctx.pattern = ''
-            return g:MX_RES_NOAPPLYPATTERN
+            return
         endif
 
         if a:ctx.candidate_idx == -1
@@ -46,19 +45,17 @@ function! mx#handlers#completion#handle(ctx) abort
         let word = a:ctx.candidates[a:ctx.candidate_idx].word
         let a:ctx.cmd = a:ctx.completepos == 0 ? word : a:ctx.cmd[:a:ctx.completepos] . word
         let a:ctx.input = ''
-        let a:ctx.pattern = ''
 
         if len(a:ctx.candidates) == 1
             let a:ctx.candidates = []
         endif
 
-        return g:MX_RES_NOAPPLYPATTERN
+        return
     endif
 
     if a:ctx.candidate_idx != -1
         if a:ctx.input == 27 "Esc
             let a:ctx.cmd = a:ctx.cmdback
-            let a:ctx.pattern = a:ctx.cmd
             let a:ctx.input = ''
         endif
 

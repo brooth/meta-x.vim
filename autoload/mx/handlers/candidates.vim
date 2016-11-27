@@ -39,7 +39,7 @@ function! mx#handlers#candidates#handle(ctx) abort
         if get(candidate, 'favorit')
             let candidate.priority += 20
         endif
-        if stridx(candidate.word, a:ctx.pattern) == 0 "starts with same case
+        if stridx(candidate.word, a:ctx.cmd) == 0 "starts with same case
             let candidate.priority += 10
         endif
     endfor

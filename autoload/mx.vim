@@ -69,13 +69,12 @@ call mx#tools#setdefault('g:mx#drawers', {})
 call mx#tools#setdefault('g:mx#drawers.cycle', {'fn': 'mx#drawers#cycle#draw'})
 " }}}
 
-" vars {{{
+" consts {{{
 let g:MX_RES_EXIT = 1
 let g:MX_RES_BREAK = 2
 let g:MX_RES_NOINPUT = 4
 let g:MX_RES_NODRAWCMDLINE = 8
 let g:MX_RES_NOUPDATECURSOR = 16
-let g:MX_RES_NOAPPLYPATTERN = 32
 "}}}
 
 function! mx#loop(ctx) " {{{
@@ -97,15 +96,6 @@ function! mx#loop(ctx) " {{{
     while besafe > 0
         call mx#tools#log('------ loop -------')
         let besafe += 1
-
-        if empty(a:ctx.input)
-            let a:ctx.pattern = a:ctx.cmd
-        elseif a:ctx.cursor >= len(a:ctx.cmd)
-            let a:ctx.pattern = a:ctx.cmd . nr2char(a:ctx.input)
-        else
-            let a:ctx.pattern = join(insert(split(a:ctx.cmd, '\zs'), nr2char(a:ctx.input), a:ctx.cursor), '')
-        endif
-
         let result = 0
         for handler in s:handlers
             let result = or(result, call(function(handler.fn), [a:ctx]))
@@ -119,11 +109,6 @@ function! mx#loop(ctx) " {{{
                 break
             endif
         endfor
-
-        if and(result, g:MX_RES_NOAPPLYPATTERN) != g:MX_RES_NOAPPLYPATTERN
-            call mx#tools#log('apply pattern')
-            let a:ctx.cmd = a:ctx.pattern
-        endif
 
         if and(result, g:MX_RES_NOUPDATECURSOR) != g:MX_RES_NOUPDATECURSOR
             call mx#tools#log('update cursor')
