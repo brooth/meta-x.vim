@@ -27,6 +27,10 @@ call mx#tools#setdefault('g:mx#handlers.completion', {
     \   'fn': 'mx#handlers#completion#handle',
     \   'priority': 25,
     \   })
+call mx#tools#setdefault('g:mx#handlers.history', {
+    \   'fn': 'mx#handlers#history#handle',
+    \   'priority': 25,
+    \   })
 call mx#tools#setdefault('g:mx#handlers.specialkeys', {
     \   'fn': 'mx#handlers#specialkeys#handle',
     \   'priority': 20,

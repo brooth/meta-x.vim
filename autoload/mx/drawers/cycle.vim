@@ -13,14 +13,14 @@ function! mx#drawers#cycle#draw(ctx) abort
 
     echohl MxCommand
     echon a:ctx.welcome_sign
-    let chars += len(a:ctx.welcome_sign)
+    let chars += strdisplaywidth(a:ctx.welcome_sign)
     let cmd = a:ctx.cmd . ' '
     for i in range(len(cmd))
         if i == a:ctx.cursor | echohl MxCursor | endif
         echon cmd[i]
         if i == a:ctx.cursor | echohl MxCommand | endif
     endfor
-    let chars += len(cmd)
+    let chars += strdisplaywidth(cmd)
 
     echon ' ' | let chars += 1
 
@@ -38,7 +38,7 @@ function! mx#drawers#cycle#draw(ctx) abort
 
             let out = ' ' . candidate.word . ' '
 
-            if (chars + len(out) + 2 + 1) / &columns > g:mx#max_lines - 1
+            if (chars + strdisplaywidth(out) + 2 + 1) / &columns > g:mx#max_lines - 1
                 echon '..' | let chars += 2 | break
             endif
 
@@ -51,7 +51,7 @@ function! mx#drawers#cycle#draw(ctx) abort
                 echohl MxComplete
                 echon out[easykey + 2:]
             endif
-            let chars += len(out)
+            let chars += strdisplaywidth(out)
         endfor
 
         echon '}' | let chars += 1

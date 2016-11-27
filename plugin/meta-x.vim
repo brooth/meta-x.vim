@@ -5,21 +5,23 @@
 
 " todos {{{
 " BETA 1
-" buffer handler, show number + easycomplete?
+" 'cmd' in candidates. use instead of 'word' if presented
 " up/down - history, shortcut for history complete as well
 " paste from registers
+" auto escape pattern 'kkkkk' as well as hjl. or same key in short period?
 " sub favorits. related to part. commands
+" cycle -> carusel. highlight different colors on completion
+" buffer handler, show number + easycomplete?
 " while/black list for autocompletion. '!^' black by default
 " substitute (and others) preview. show first found item and result above
 " substitude complete from current buff
 " '$' prefix for shell commands
 " auto cancel cmd entering by timeout. ability to continue cancelled cmd
 " try to hide cursor if possible
-" find all buildin command abbrevs. auto +10 priority if matched.
-"   show like "h[elp]" in completion
+" find all buildin command abbrevs. auto +10 priority if matched. show like "h[elp]" in completion
 " BETA 2
 " auto priority by MRU
-" multiple complete drawers (cycle, flow, list, table)
+" multiple complete drawers (classic, flow, list, table)
 " auto pairs
 " snippets: ":s -> :s/{0}/{1}/{3='g'}" ; jump between {} by tab
 " }}}

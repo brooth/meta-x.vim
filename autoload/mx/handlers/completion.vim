@@ -15,17 +15,17 @@ function! mx#handlers#completion#handle(ctx) abort
     endif
 
     if a:ctx.input == 9 || a:ctx.input is# "\<S-Tab>"
-        if empty(a:ctx.candidates)
-            let a:ctx.input = ''
-            let a:ctx.pattern = ''
-            return g:MX_RES_NOAPPLYPATTERN
-        endif
-
         " if !a:ctx.complete
         "     let a:ctx.complete = 1
         "     let a:ctx.input = ''
         "     return or(g:MX_RES_NODRAWCMDLINE, g:MX_RES_NOINPUT)
         " endif
+
+        if empty(a:ctx.candidates)
+            let a:ctx.input = ''
+            let a:ctx.pattern = ''
+            return g:MX_RES_NOAPPLYPATTERN
+        endif
 
         if a:ctx.candidate_idx == -1
             let a:ctx.candidate_idx = 0
