@@ -3,13 +3,9 @@
 " Author: Oleg Khalidov <brooth@gmail.com>
 " License: MIT
 
-call mx#tools#setdefault('g:mx#feedkeys_source_whilelist', [
-    \   '...*',
-    \   ])
-
-call mx#tools#setdefault('g:mx#feedkeys_source_blacklist', [
-    \   '+$',
-    \   ])
+call mx#tools#setdefault('g:mx#feedkeys_source_min_length', 2)
+call mx#tools#setdefault('g:mx#feedkeys_source_whilelist', [])
+call mx#tools#setdefault('g:mx#feedkeys_source_blacklist', [])
 call add(g:mx#feedkeys_source_blacklist, '')
 
 function! mx#sources#feedkeys#gather(ctx) abort
@@ -29,19 +25,15 @@ function! mx#sources#feedkeys#gather(ctx) abort
         endif
     endfor
 
-    silent! call feedkeys(":" . a:ctx.cmd . "\<C-A>\<C-t>c\<Esc>", 'x')
-
-    let completepos = max([0, strridx(a:ctx.cmd, ' ', a:ctx.cursor)])
-    let tocomplete = a:ctx.cmd[completepos + 1:]
-    call mx#tools#log('tocomplete:' . tocomplete)
-
-    for word in split(g:mx#cmdline, ' ')
-        if strridx(word, '') == -1
-                \   && stridx(tolower(a:ctx.cmd), tolower(word)) == -1 "is not in pattern
-                \   && stridx(tolower(word), tolower(tocomplete)) >= 0 "contains tocomplete
-            call add(candidates, {'word': word})
-        endif
-    endfor
-
+    if len(a:ctx.pattern) >= g:mx#feedkeys_source_min_length
+        silent! call feedkeys(":" . a:ctx.cmd . "\<C-A>\<C-t>c\<Esc>", 'x')
+        for word in split(g:mx#cmdline, ' ')
+            if strridx(word, '') == -1
+                    \   && stridx(tolower(a:ctx.cmd), tolower(word)) == -1 "not fully in cmd
+                    \   && stridx(tolower(word), tolower(a:ctx.pattern)) >= 0 "contains the pattern
+                call add(candidates, {'word': word})
+            endif
+        endfor
+    endif
     return candidates
 endfunction

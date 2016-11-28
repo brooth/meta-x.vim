@@ -5,8 +5,6 @@
 
 " options "{{{
 call mx#tools#setdefault('g:mx#max_lines', 1)
-call mx#tools#setdefault('g:mx#max_candidates', 50)
-call mx#tools#setdefault('g:mx#show_complete', 1)
 call mx#tools#setdefault('g:mx#welcome_sign', ':')
 call mx#tools#setdefault('g:mx#drawer', 'cycle')
 
@@ -44,12 +42,12 @@ call mx#tools#setdefault('g:mx#handlers.feedkeys', {
     \   'priority': 15,
     \   })
 call mx#tools#setdefault('g:mx#handlers.candidates', {
-    \   'fn': 'mx#handlers#candidates#handle',
+    \   'fn': 'mx#handlers#completion#gather',
     \   'priority': 10,
     \   })
 call mx#tools#setdefault('g:mx#handlers.formatter', {
     \   'fn': 's:formathandler',
-    \   'priority': 5,
+    \   'priority': 0,
     \   })
 
 let s:handlers = []
@@ -85,11 +83,8 @@ function! mx#loop(ctx) " {{{
 
     call mx#tools#setdictdefault(a:ctx, 'cmd', '')
     call mx#tools#setdictdefault(a:ctx, 'welcome_sign', g:mx#welcome_sign)
-    call mx#tools#setdictdefault(a:ctx, 'candidates', [])
-    call mx#tools#setdictdefault(a:ctx, 'candidate_idx', -1)
     call mx#tools#setdictdefault(a:ctx, 'input', '')
     call mx#tools#setdictdefault(a:ctx, 'cursor', 0)
-    call mx#tools#setdictdefault(a:ctx, 'complete', g:mx#show_complete)
     call mx#tools#setdictdefault(a:ctx, 'drawer', g:mx#drawer)
 
     let besafe = 500
