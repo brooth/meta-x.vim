@@ -20,7 +20,7 @@ endfor
 function! mx#sources#favorits#gather(ctx) abort
     let candidates = []
     for fav in g:mx#favorits
-        if empty(a:ctx.pattern) || strridx(tolower(fav.word), tolower(a:ctx.pattern)) == 0
+        if empty(a:ctx.cmd) || strridx(tolower(fav.word), tolower(a:ctx.pattern)) == 0
             call add(candidates, copy(fav))
         endif
     endfor

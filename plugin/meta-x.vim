@@ -47,7 +47,7 @@ endfunction "}}}
 cnoremap <C-t>c <C-\>e(mx#tools#cutcmdline())<CR>
 cnoremap <C-t>p <C-\>e(mx#tools#getcmdpos())<CR>
 cnoremap <C-t>P <C-\>e(mx#tools#setcmdpos())<CR>
-nnoremap <c-i> :call MetaX('')<cr>
+nnoremap <silent> ; :call MetaX('')<cr>
 "}}}
 
 " vim: set et fdm=marker sts=4 sw=4:

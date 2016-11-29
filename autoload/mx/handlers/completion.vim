@@ -81,9 +81,12 @@ function! mx#handlers#completion#gather(ctx) abort "{{{
         call mx#tools#log('mx#handlers#completion#gather(' . string(a:ctx) . ')')
     endif
 
-    let a:ctx.candidates = a:ctx.completemode == 0 ? [] : s:gathercandidates(a:ctx)
-
-    if a:ctx.completemode == 2
+    if a:ctx.completemode != 2
+        let a:ctx.candidates = a:ctx.completemode == 0 ? [] : s:gathercandidates(a:ctx)
+        if has_key(a:ctx, 'completepos')
+            unlet a:ctx.completepos
+        endif
+    else
         if !has_key(a:ctx, 'completepos')
             let a:ctx.completepos = max([0, strridx(a:ctx.cmd, ' ', a:ctx.cursor)])
             if a:ctx.candidate_idx == -1 && len(a:ctx.candidates) == 1
@@ -91,15 +94,14 @@ function! mx#handlers#completion#gather(ctx) abort "{{{
             endif
         endif
 
-        let word = a:ctx.candidates[a:ctx.candidate_idx].word
-        let a:ctx.cmd = a:ctx.completepos == 0 ? word : a:ctx.cmd[:a:ctx.completepos] . word
-
-        if len(a:ctx.candidates) == 1
-            let a:ctx.candidates = []
-        endif
-    else
-        if has_key(a:ctx, 'completepos')
-            unlet a:ctx.completepos
+        if len(a:ctx.candidates) > a:ctx.candidate_idx
+            let word = a:ctx.candidates[a:ctx.candidate_idx].word
+            let a:ctx.cmd = a:ctx.completepos == 0 ? word : a:ctx.cmd[:a:ctx.completepos] . word
+            if len(a:ctx.candidates) == 1
+                let a:ctx.candidates = []
+            endif
+        else
+            let a:ctx.candidate_idx = -1
         endif
     endif
 endfunction "}}}
@@ -107,9 +109,8 @@ endfunction "}}}
 function! s:gathercandidates(ctx) abort "{{{
     call mx#tools#log('gathercandidates()')
 
-    let a:ctx.pattern = a:ctx.cmd . nr2char(a:ctx.input)
-    let completepos = max([0, strridx(a:ctx.pattern, ' ', a:ctx.cursor)])
-    let a:ctx.pattern = a:ctx.pattern[completepos:]
+    let completepos = max([0, strridx(a:ctx.cmd, ' ', a:ctx.cursor)])
+    let a:ctx.pattern = a:ctx.cmd[completepos:]
     call mx#tools#log('pattern to complete: "' . a:ctx.pattern . '"')
 
     let candidates = []
