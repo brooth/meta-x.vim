@@ -59,7 +59,7 @@ for k in keys(g:mx#handlers)
     endif
     call add(s:handlers, val)
 endfor
-let s:handlers = sort(s:handlers, 'mx#tools#PriorityCompare')
+let s:handlers = sort(s:handlers, 'mx#tools#PrioritySorter')
 " }}}
 
 " drawers {{{
@@ -117,13 +117,70 @@ function! mx#loop(ctx) " {{{
                 echoerr 'unknown drawer ' . a:ctx.drawer
                 return
             endif
-            call call(function(drawer.fn), [a:ctx])
+            call s:drawcmdline(call(function(drawer.fn), [a:ctx]))
         endif
 
         if and(result, g:MX_RES_NOINPUT) != g:MX_RES_NOINPUT
             let a:ctx.input = getchar()
         endif
     endwhile
+endfunction "}}}
+
+function! s:drawcmdline(data) "{{{
+    let content = a:data[0]
+    let syntaxs = a:data[1]
+    call add(syntaxs, {'name': 'None', 'range': [0, 99999]})
+    let syntaxs = sort(syntaxs, 's:RangeSorter')
+
+    if mx#tools#isdebug()
+        call mx#tools#log('syntaxs:' . string(syntaxs))
+        call mx#tools#log('content:' . string(content))
+    endif
+
+    let output = []
+    call s:drawsyntax(output, join(content, ''), 0, syntaxs, 0)
+    let cmdline = join(output, '|')
+
+    if mx#tools#isdebug()
+        call mx#tools#log('output:' . cmdline)
+    endif
+
+    redraw
+    exec cmdline
+endfunction "}}}
+
+function! s:drawsyntax(output, line, pos, syntaxs, synidx) "{{{
+    let synidx = a:synidx
+    let cursyn = a:syntaxs[synidx]
+    let besafe = 100
+    let startpos = a:pos
+    while besafe > 0
+        let besafe -= 1
+        let nesting = synidx < len(a:syntaxs) - 1 && cursyn.range[1] >= a:syntaxs[synidx + 1].range[0]
+        let endpos = nesting ? a:syntaxs[synidx + 1].range[0] : cursyn.range[1] + 1
+
+        if endpos > startpos
+            let out = string(a:line[startpos:endpos - 1])
+            call add(a:output, 'echohl ' . cursyn.name)
+            call add(a:output, 'echon ' . out)
+        endif
+
+        if nesting
+            let nesres = s:drawsyntax(a:output, a:line, endpos, a:syntaxs, synidx + 1)
+            let startpos = nesres[0]
+            let endpos = startpos
+            let synidx = nesres[1]
+        endif
+        if endpos >= cursyn.range[1]
+            return [endpos, synidx]
+        endif
+    endwhile
+endfunction "}}}
+
+function! s:RangeSorter(i1, i2) "{{{
+    return a:i1.range[0] > a:i2.range[0] ? 1 :
+        \  a:i1.range[0] < a:i2.range[0] ? -1 :
+        \  a:i1.range[1] < a:i2.range[1] ? 1 : -1
 endfunction "}}}
 
 function! s:formathandler(ctx) abort "{{{

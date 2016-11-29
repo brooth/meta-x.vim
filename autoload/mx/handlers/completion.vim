@@ -135,7 +135,7 @@ function! s:gathercandidates(ctx) abort "{{{
         endif
     endfor
 
-    let candidates = sort(candidates, 'mx#tools#PriorityCompare')
+    let candidates = sort(candidates, 'mx#tools#PrioritySorter')
     let candidates = uniq(candidates, 'mx#tools#WordComparator')
     if len(candidates) > g:mx#max_candidates
         let candidates = candidates[:g:mx#max_candidates]

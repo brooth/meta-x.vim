@@ -5,6 +5,7 @@
 
 " todos {{{
 " BETA 1
+" do not draw cxt too early? on key holding?
 " 'cmd' in candidates. use instead of 'word' if presented
 " up/down - history, shortcut for history complete as well
 " paste from registers
@@ -30,6 +31,7 @@
 hi def link MxCommand Macro
 hi def link MxComplete Comment
 hi def link MxCursor Cursor
+hi def link MxSelCandidate Nornal
 hi def link MxEasyRun Keyword
 hi def link MxEasyComplete Include
 hi def link MxInfoMsg String

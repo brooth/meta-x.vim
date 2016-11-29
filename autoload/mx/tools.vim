@@ -56,7 +56,7 @@ function! mx#tools#echoerr(msg) abort "{{{
     echohl None
 endfunction "}}}
 
-function! mx#tools#PriorityCompare(i1, i2) "{{{
+function! mx#tools#PrioritySorter(i1, i2) "{{{
     return a:i1.priority == a:i2.priority ? 0
     \   : a:i1.priority > a:i2.priority ? -1 : 1
 endfunction "}}}

@@ -8,81 +8,102 @@ function! mx#drawers#cycle#draw(ctx) abort
         call mx#tools#log('mx#drawers#cycle#draw(' . string(a:ctx) . ')')
     endif
 
-    let chars = 1
-    redraw
+    let chars = 0
+    let content = []
+    let syntaxs = []
 
-    echohl MxCommand
-    echon a:ctx.welcome_sign
-    let chars += strdisplaywidth(a:ctx.welcome_sign)
-    let cmd = a:ctx.cmd . ' '
-    for i in range(len(cmd))
-        if i == a:ctx.cursor | echohl MxCursor | endif
-        echon cmd[i]
-        if i == a:ctx.cursor | echohl MxCommand | endif
-    endfor
-    let chars += strdisplaywidth(cmd)
+    call add(content, a:ctx.welcome_sign)
+    call add(content, a:ctx.cmd . ' ')
+    let chars += strdisplaywidth(a:ctx.welcome_sign) + strdisplaywidth(a:ctx.cmd)
+    call add(syntaxs, {'name': 'MxCommand', 'range': [0, chars]})
+    call add(syntaxs, {'name': 'MxCursor', 'range': [a:ctx.cursor + 1, a:ctx.cursor + 1]})
 
-    echon ' ' | let chars += 1
+    call add(content, ' ') | let chars += 1
 
-    let info = get(a:ctx, 'info', '')
-    if !empty(info)
-        echohl MxInfoMsg
-        echon info | let chars += strdisplaywidth(info)
-        echohl None
-        echon ' ' | let chars += 1
+    if has_key(a:ctx, 'info')
+        let msglen = strdisplaywidth(a:ctx.info)
+        call add(content, a:ctx.info)
+        call add(syntaxs, {'name': 'MxInfoMsg', 'range': [chars, chars + msglen]})
+        let chars += msglen
+        call add(content, ' ') | let chars += 1
     endif
-
-    let warn = get(a:ctx, 'warn', '')
-    if !empty(warn)
-        echohl MxWarnMsg
-        echon warn | let chars += strdisplaywidth(warn)
-        echohl None
-        echon ' ' | let chars += 1
+    if has_key(a:ctx, 'warn')
+        let msglen = strdisplaywidth(a:ctx.warn)
+        call add(content, a:ctx.warn)
+        call add(syntaxs, {'name': 'MxWarningMsg', 'range': [chars, chars + msglen]})
+        let chars += msglen
+        call add(content, ' ') | let chars += 1
     endif
-
-    let error = get(a:ctx, 'error', '')
-    if !empty(error)
-        echohl MxErrorMsg
-        echon error | let chars += strdisplaywidth(error)
-        echohl None
-        echon ' ' | let chars += 1
+    if has_key(a:ctx, 'error')
+        let msglen = strdisplaywidth(a:ctx.error)
+        call add(content, a:ctx.error)
+        call add(syntaxs, {'name': 'MxWarningMsg', 'range': [chars, chars + msglen]})
+        let chars += msglen
+        call add(content, ' ') | let chars += 1
     endif
 
     if !empty(a:ctx.candidates)
-        echohl MxComplete
-        echon '{' | let chars += 1
-
-        let shift = a:ctx.candidate_idx + 1
-        let len = len(a:ctx.candidates)
+        let synbegin = chars
         let easycomplete = get(a:ctx, 'easycomplete')
-        for idx in range(len)
-            if idx + shift >= len | let shift = -(len - a:ctx.candidate_idx - 1) | endif
-            let candidate = a:ctx.candidates[idx + shift]
-            let easykey = get(candidate, 'easykey', -1)
+        let easysynname = easycomplete? (a:ctx.easycomplete == 1 ? 'MxEasyRun' : 'MxEasyComplete') : ''
+        call add(content, '{') | let chars += 1
 
-            let out = ' ' . candidate.word . ' '
+        let firstcandidate = 0
+        let lastcandidate = len(a:ctx.candidates) - 1
+        let candidateshown = 0
+        let reachedlimit = 0
+        let _chars = chars
+        for candidate_idx in range(lastcandidate)
+            let candidate = a:ctx.candidates[candidate_idx]
+            let caption = has_key(candidate, 'caption') ? candidate.caption : candidate.word
+            let _chars += strdisplaywidth(caption) + 2
 
-            if (chars + strdisplaywidth(out) + 1) / &columns > g:mx#max_lines - 1
-                let out =  out[:&columns * g:mx#max_lines - chars - 5] . '..'
-                echon out | let chars += strdisplaywidth(out)
+            if a:ctx.candidate_idx == -1 || candidate_idx > a:ctx.candidate_idx
+                let candidateshown = 1
+            endif
+            if candidateshown
+                if (_chars + 3) / &columns <= g:mx#max_lines - 1
+                    let firstcandidate += 1
+                    continue
+                else
+                    let reachedlimit = 1
+                endif
+            else
+                if reachedlimit
+                    let lastcandidate = candidate_idx
+                endif
                 break
             endif
-
-            if easykey == -1
-                echon out
-            else
-                echon out[:easykey]
-                if easycomplete == 1 | echohl MxEasyRun | else | echohl MxEasyComplete | endif
-                echon out[easykey + 1]
-                echohl MxComplete
-                echon out[easykey + 2:]
-            endif
-            let chars += strdisplaywidth(out)
         endfor
 
-        echon '}' | let chars += 1
+        for candidate_idx in range(firstcandidate, lastcandidate)
+            let candidate = a:ctx.candidates[candidate_idx]
+            let out = ' ' . (has_key(candidate, 'caption') ? candidate.caption : candidate.word) . ' '
+            let _chars = chars
+            let chars += strdisplaywidth(out)
+            call add(content, out)
+
+            if candidate_idx == a:ctx.candidate_idx
+                call add(syntaxs, {'name': 'MxSelCandidate', 'range': [_chars + 2, chars - 1]})
+            endif
+
+            if easycomplete
+                let easykey = get(candidate, 'easykey', -1)
+                if easykey != -1
+                    let pos = chars + easykey + 2
+                    call add(syntaxs, {'name': easysynname, 'range': [pos, pos]})
+                endif
+            endif
+        endfor
+
+        if reachedlimit
+            call add(content, '.. ') | let chars += 3
+        endif
+
+        call add(content, '}') | let chars += 1
+        call add(syntaxs, {'name': 'MxComplete', 'range': [synbegin + 1, chars]})
     endif
 
-    echohl None
-    echon repeat(' ', (&columns - chars % &columns))
+    call add(content, repeat(' ', (&columns - chars % &columns) - 2))
+    return [content, syntaxs]
 endfunction
