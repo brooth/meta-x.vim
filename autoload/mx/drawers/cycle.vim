@@ -3,6 +3,41 @@
 " Author: Oleg Khalidov <brooth@gmail.com>
 " License: MIT
 
+function! s:drawcandidates(ctx, candidates, maxwidth, charsoffset, reverse)
+    call mx#tools#log('charsoffset:' . string(a:charsoffset))
+    let chars = 0
+    let content = []
+    let syntaxs = []
+    let brk = 0
+    let easycomplete = get(a:ctx, 'easycomplete')
+    let easysynname = easycomplete? (a:ctx.easycomplete == 1 ? 'MxEasyRun' : 'MxEasyComplete') : ''
+    for candidate in (a:reverse ? reverse(a:candidates) : a:candidates)
+        let out = ' ' . (has_key(candidate, 'caption') ? candidate.caption : candidate.word) . ' '
+        let outlen = strdisplaywidth(out)
+
+        if chars + outlen + 3 >= a:maxwidth
+            let cutpos = a:maxwidth - chars - 3
+            let out = a:reverse ? ' ..' . out[-cutpos:] : out[:cutpos-1] . '.. '
+            let outlen = strdisplaywidth(out)
+            let brk = 1
+        endif
+
+        if easycomplete
+            let easykey = get(candidate, 'easykey', -1)
+            if easykey != -1
+                let pos = chars + a:charsoffset + easykey + 2
+                call add(syntaxs, {'name': easysynname, 'range': [pos, pos]})
+            endif
+        endif
+
+        call add(content, out)
+        let chars += outlen
+        if brk | break | endif
+
+    endfor
+    return [a:reverse ? reverse(content) : content, syntaxs, chars]
+endfunction
+
 function! mx#drawers#cycle#draw(ctx) abort
     if mx#tools#isdebug()
         call mx#tools#log('mx#drawers#cycle#draw(' . string(a:ctx) . ')')
@@ -44,61 +79,32 @@ function! mx#drawers#cycle#draw(ctx) abort
 
     if !empty(a:ctx.candidates)
         let synbegin = chars
-        let easycomplete = get(a:ctx, 'easycomplete')
-        let easysynname = easycomplete? (a:ctx.easycomplete == 1 ? 'MxEasyRun' : 'MxEasyComplete') : ''
         call add(content, '{') | let chars += 1
 
-        let firstcandidate = 0
-        let lastcandidate = len(a:ctx.candidates) - 1
-        let candidateshown = 0
-        let reachedlimit = 0
-        let _chars = chars
-        for candidate_idx in range(lastcandidate)
-            let candidate = a:ctx.candidates[candidate_idx]
-            let caption = has_key(candidate, 'caption') ? candidate.caption : candidate.word
-            let _chars += strdisplaywidth(caption) + 2
-
-            if a:ctx.candidate_idx == -1 || candidate_idx > a:ctx.candidate_idx
-                let candidateshown = 1
-            endif
-            if candidateshown
-                if (_chars + 3) / &columns <= g:mx#max_lines - 1
-                    let firstcandidate += 1
-                    continue
-                else
-                    let reachedlimit = 1
-                endif
-            else
-                if reachedlimit
-                    let lastcandidate = candidate_idx
-                endif
-                break
-            endif
-        endfor
-
-        for candidate_idx in range(firstcandidate, lastcandidate)
-            let candidate = a:ctx.candidates[candidate_idx]
-            let out = ' ' . (has_key(candidate, 'caption') ? candidate.caption : candidate.word) . ' '
-            let _chars = chars
-            let chars += strdisplaywidth(out)
-            call add(content, out)
-
-            if candidate_idx == a:ctx.candidate_idx
-                call add(syntaxs, {'name': 'MxSelCandidate', 'range': [_chars + 2, chars - 1]})
-            endif
-
-            if easycomplete
-                let easykey = get(candidate, 'easykey', -1)
-                if easykey != -1
-                    let pos = chars + easykey + 2
-                    call add(syntaxs, {'name': easysynname, 'range': [pos, pos]})
-                endif
-            endif
-        endfor
-
-        if reachedlimit
-            call add(content, '.. ') | let chars += 3
+        let roffset = 0
+        let selout = ''
+        if a:ctx.candidate_idx != -1
+            let selcandidate = a:ctx.candidates[a:ctx.candidate_idx]
+            let selout = has_key(selcandidate, 'caption') ? selcandidate.caption : selcandidate.word
+            let roffset = strdisplaywidth(selout) + 10
         endif
+
+        let lcandidates = a:ctx.candidate_idx < 1 ? [] : a:ctx.candidates[:(a:ctx.candidate_idx - 1)]
+        let lresult = s:drawcandidates(a:ctx, lcandidates, &columns - chars - roffset, chars, 1)
+        call extend(content, lresult[0])
+        call extend(syntaxs, lresult[1])
+        let chars += lresult[2]
+
+        if selout != ''
+            let seloffset = chars + 1
+            call add(syntaxs, {'name': 'MxSelCandidate', 'range': [seloffset + 1, seloffset + strdisplaywidth(selout)]})
+        endif
+
+        let rcandidates = a:ctx.candidate_idx < 1 ? a:ctx.candidates : a:ctx.candidates[a:ctx.candidate_idx:]
+        let rresult = s:drawcandidates(a:ctx, rcandidates, &columns - chars - 4, chars, 0)
+        call extend(content, rresult[0])
+        call extend(syntaxs, rresult[1])
+        let chars += rresult[2]
 
         call add(content, '}') | let chars += 1
         call add(syntaxs, {'name': 'MxComplete', 'range': [synbegin + 1, chars]})
