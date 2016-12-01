@@ -6,7 +6,6 @@
 " todos {{{
 " BETA 1
 " do not draw cxt too early? on key holding?
-" 'cmd' in candidates. use instead of 'word' if presented
 " up/down - history, shortcut for history complete as well
 " paste from registers
 " auto escape pattern 'kkkkk' as well as hjl. or same key in short period?
@@ -38,6 +37,7 @@ hi def link MxEasyComplete Include
 hi def link MxInfoMsg String
 hi def link MxWarnMsg Special
 hi def link MxErrorMsg Error
+hi def link MxSpecialSymbols SpecialKey
 " }}}
 
 function! MetaX(line) "{{{

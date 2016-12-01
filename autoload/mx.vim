@@ -6,12 +6,6 @@
 " options "{{{
 call mx#tools#setdefault('g:mx#welcome_sign', ':')
 call mx#tools#setdefault('g:mx#drawer', 'modern')
-
-" call mx#tools#setdefault('g:mx#auto_pairs', [
-"     \   {'open': '\(', 'close': '\)'}
-"     \   {'open': '(', 'close': ')'}
-"     \   {'open': '[', 'close': ']'}
-"     \   ])
 "}}}
 
 " handlers {{{
@@ -45,7 +39,7 @@ call mx#tools#setdefault('g:mx#handlers.candidates', {
     \   'priority': 10,
     \   })
 call mx#tools#setdefault('g:mx#handlers.formatter', {
-    \   'fn': 's:formathandler',
+    \   'fn': 'mx#handlers#formatter#handle',
     \   'priority': 0,
     \   })
 
@@ -180,12 +174,6 @@ function! s:RangeSorter(i1, i2) "{{{
     return a:i1.range[0] > a:i2.range[0] ? 1 :
         \  a:i1.range[0] < a:i2.range[0] ? -1 :
         \  a:i1.range[1] < a:i2.range[1] ? 1 : -1
-endfunction "}}}
-
-function! s:formathandler(ctx) abort "{{{
-    if mx#tools#isdebug()
-        call mx#tools#log('formathandler(' . string(a:ctx) . ')')
-    endif
 endfunction "}}}
 
 " vim: set et fdm=marker sts=4 sw=4:

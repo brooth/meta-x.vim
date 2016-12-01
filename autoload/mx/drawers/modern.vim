@@ -12,6 +12,18 @@ function! mx#drawers#modern#draw(ctx) abort
     let content = []
     let syntaxs = []
 
+    if !has_key(a:ctx, '_specialkeyscmd') || a:ctx._specialkeyscmd != a:ctx.cmd
+        let a:ctx._specialkeys = []
+    endif
+    if empty(a:ctx._specialkeys)
+        call s:formatspecials(a:ctx, syntaxs, "\n", '^M')
+        call s:formatspecials(a:ctx,	 syntaxs, "\t", '^I')
+        let a:ctx._specialkeyscmd = a:ctx.cmd
+    endif
+    for skidx in a:ctx._specialkeys
+        call add(syntaxs, {'name': 'MxSpecialSymbols', 'range': [skidx + 1, skidx + 2]})
+    endfor
+
     call add(content, a:ctx.welcome_sign)
     call add(content, a:ctx.cmd . ' ')
     let chars += strdisplaywidth(a:ctx.welcome_sign) + strdisplaywidth(a:ctx.cmd)
@@ -117,3 +129,16 @@ function! s:calcchars(arr)
     return chars
 endfunction
 
+function! s:formatspecials(ctx, syntaxs, key, val)
+    let idx = -1
+    while 1
+        let idx = stridx(a:ctx.cmd, a:key, idx + 1)
+        if idx != -1
+            let a:ctx.cmd = (idx > 0 ? a:ctx.cmd[:idx-1] : '') . a:val . a:ctx.cmd[idx + 1:]
+            let a:ctx.cursor += len(a:val) - 1
+            call add(a:ctx._specialkeys, idx)
+        else
+            break
+        endif
+    endwhile
+endfunction

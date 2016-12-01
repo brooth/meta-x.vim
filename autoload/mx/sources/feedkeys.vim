@@ -6,9 +6,9 @@
 call mx#tools#setdefault('g:mx#feedkeys_source_whilelist', [])
 call mx#tools#setdefault('g:mx#feedkeys_source_blacklist', [
     \   '^.\?$',
-    \   '[-+/*=!]$',
+    \   '[-+*=!]$',
     \   ])
-call add(g:mx#feedkeys_source_blacklist, '')
+call add(g:mx#feedkeys_source_blacklist, '\n')
 
 function! mx#sources#feedkeys#gather(ctx) abort
     call mx#tools#log('mx#sources#feedkeys#gather()')
