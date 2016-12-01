@@ -4,9 +4,8 @@
 " License: MIT
 
 " options "{{{
-call mx#tools#setdefault('g:mx#max_lines', 1)
 call mx#tools#setdefault('g:mx#welcome_sign', ':')
-call mx#tools#setdefault('g:mx#drawer', 'cycle')
+call mx#tools#setdefault('g:mx#drawer', 'modern')
 
 " call mx#tools#setdefault('g:mx#auto_pairs', [
 "     \   {'open': '\(', 'close': '\)'}
@@ -64,7 +63,7 @@ let s:handlers = sort(s:handlers, 'mx#tools#PrioritySorter')
 
 " drawers {{{
 call mx#tools#setdefault('g:mx#drawers', {})
-call mx#tools#setdefault('g:mx#drawers.cycle', {'fn': 'mx#drawers#cycle#draw'})
+call mx#tools#setdefault('g:mx#drawers.modern', {'fn': 'mx#drawers#modern#draw'})
 " }}}
 
 " consts {{{

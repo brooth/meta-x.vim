@@ -21,6 +21,7 @@
 " try to hide cursor if possible
 " find all buildin command abbrevs. auto +10 priority if matched. show like "h[elp]" in completion
 " BETA 2
+" multiple lines for candidates
 " auto priority by MRU
 " multiple complete drawers (classic, flow, list, table)
 " auto pairs
