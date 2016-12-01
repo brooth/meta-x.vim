@@ -30,7 +30,7 @@ function! mx#sources#feedkeys#gather(ctx) abort
     silent! call feedkeys(":" . a:ctx.cmd . "\<C-A>\<C-t>c\<Esc>", 'x')
     for word in split(g:mx#cmdline, ' ')
         if strridx(word, '') == -1
-                    \   && stridx(tolower(a:ctx.cmd), tolower(word)) == -1 "not fully in cmd
+                    \   && stridx(a:ctx.cmd, word) == -1 "not fully in cmd
                     \   && stridx(tolower(word), tolower(a:ctx.pattern)) >= 0 "contains the pattern
             call add(candidates, {'word': word})
         endif

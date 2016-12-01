@@ -7,7 +7,7 @@
 call mx#tools#setdefault('g:mx#max_candidates', 50)
 call mx#tools#setdefault('g:mx#show_candidates', 1)
 "}}}
-"
+
 " sources {{{
 call mx#tools#setdefault('g:mx#sources', {})
 call mx#tools#setdefault('g:mx#sources.favorits', {'fn': 'mx#sources#favorits#gather'})
@@ -67,6 +67,7 @@ function! mx#handlers#completion#handle(ctx) abort "{{{
         if a:ctx.input == 27 "Esc
             let a:ctx.cmd = a:ctx.cmdback
             let a:ctx.input = ''
+            let a:ctx.cursor = len(a:ctx.cmd)
         endif
 
         let a:ctx.candidate_idx = -1
@@ -97,6 +98,7 @@ function! mx#handlers#completion#gather(ctx) abort "{{{
         if len(a:ctx.candidates) > a:ctx.candidate_idx
             let word = a:ctx.candidates[a:ctx.candidate_idx].word
             let a:ctx.cmd = a:ctx.completepos == 0 ? word : a:ctx.cmd[:a:ctx.completepos] . word
+            let a:ctx.cursor = get(a:ctx.candidates[a:ctx.candidate_idx], 'cursor', len(a:ctx.cmd))
             if len(a:ctx.candidates) == 1
                 let a:ctx.candidates = []
             endif

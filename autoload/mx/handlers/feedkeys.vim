@@ -19,6 +19,4 @@ function! mx#handlers#feedkeys#handle(ctx) abort
 
     let a:ctx.cursor = g:mx#cmdpos - 1
     let a:ctx.cmd = g:mx#cmdline
-
-    return g:MX_RES_NOUPDATECURSOR
 endfunction

@@ -5,25 +5,24 @@
 
 " todos {{{
 " BETA 1
-" do not draw cxt too early? on key holding?
+" escape special keys
 " up/down - history, shortcut for history complete as well
-" paste from registers
 " auto escape pattern 'kkkkk' as well as hjl. or same key in short period?
+" horizontal scroll if longer that &column
 " sub favorits. related to part. commands
-" cycle -> carusel. highlight different colors on completion
-" buffer handler, show number + easycomplete?
-" while/black list for autocompletion. '!^' black by default
+" do not draw cxt too freq.? on key holding?
+" buffer source, show number + easycomplete?
 " substitute (and others) preview. show first found item and result above
-" substitude complete from current buff
+" 	substitude complete from current buff
 " '$' prefix for shell commands
-" auto cancel cmd entering by timeout. ability to continue cancelled cmd
-" try to hide cursor if possible
+" auto cancel cmd entering by timeout. show in favorits cancelled cmd
 " find all buildin command abbrevs. auto +10 priority if matched. show like "h[elp]" in completion
+"
 " BETA 2
+" try to hide cursor if possible
 " multiple lines for candidates
 " auto priority by MRU
-" multiple complete drawers (classic, flow, list, table)
-" auto pairs
+" classic drawer
 " snippets: ":s -> :s/{0}/{1}/{3='g'}" ; jump between {} by tab
 " }}}
 

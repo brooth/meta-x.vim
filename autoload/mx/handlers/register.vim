@@ -45,6 +45,7 @@ function! mx#handlers#register#handle(ctx) abort
                 let expregctx.welcome_sign = '='
                 let expregctx.cmd = ''
                 let expregctx.input = ''
+                let expregctx.cursor = 0
                 let expregctx.candidates = []
                 let expregresult = mx#loop(expregctx)
                 if mx#tools#isdebug()

@@ -19,7 +19,7 @@ function! mx#handlers#easycomplete#handle(ctx) abort
         for candidate in a:ctx.candidates
             let easykey = get(candidate, 'easykey', -1)
             if easykey == -1 | continue | endif
-            if empty(keycandidate) && key == candidate.word[easykey]
+            if empty(keycandidate) && key == get(candidate, 'caption', candidate.word)[easykey]
                 let keycandidate = candidate
             endif
             unlet candidate.easykey
@@ -28,12 +28,12 @@ function! mx#handlers#easycomplete#handle(ctx) abort
             let a:ctx.cmd = a:ctx.easycompletepos == 0 ?
                         \   keycandidate.word :
                         \   a:ctx.cmd[:a:ctx.easycompletepos] . keycandidate.word
-            let a:ctx.input = a:ctx.easycomplete == 1 ? 13 : 32
-            let a:ctx.cursor = len(a:ctx.cmd)
+            let a:ctx.input = a:ctx.easycomplete == 1 ? 13 : 0
+            let a:ctx.cursor = get(keycandidate, 'cursor', len(a:ctx.cmd))
         endif
 
         if a:ctx.input == 27 "Esc
-            let a:ctx.input = ''
+            let a:ctx.input = 0
         endif
 
         unlet a:ctx.easycomplete
@@ -47,9 +47,10 @@ function! mx#handlers#easycomplete#handle(ctx) abort
 
             let taken = []
             for candidate in a:ctx.candidates
-                for i in range(len(candidate.word))
-                    if index(taken, candidate.word[i]) == -1
-                        call add(taken, candidate.word[i])
+                let caption = get(candidate, 'caption', candidate.word)
+                for i in range(len(caption))
+                    if index(taken, caption[i]) == -1
+                        call add(taken, caption[i])
                         let candidate.easykey = i
                         break
                     endif

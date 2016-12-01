@@ -30,6 +30,7 @@ function! mx#handlers#history#handle(ctx) abort
     elseif nr != -1
         if nr >= histnr(':')
             let a:ctx.cmd = a:ctx.histcmd
+            let a:ctx.cursor = len(a:ctx.cmd)
             unlet a:ctx.histnr
             unlet a:ctx.histcmd
             return
@@ -42,6 +43,7 @@ function! mx#handlers#history#handle(ctx) abort
         let histcmd = histget(':', idx)
         if !empty(histcmd) && stridx(histcmd, a:ctx.histcmd) == 0
             let a:ctx.cmd = histcmd
+            let a:ctx.cursor = len(a:ctx.cmd)
             let a:ctx.histnr = idx
             break
         endif

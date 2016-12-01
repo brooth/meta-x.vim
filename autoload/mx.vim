@@ -65,7 +65,6 @@ let g:MX_RES_EXIT = 1
 let g:MX_RES_BREAK = 2
 let g:MX_RES_NOINPUT = 4
 let g:MX_RES_NODRAWCMDLINE = 8
-let g:MX_RES_NOUPDATECURSOR = 16
 "}}}
 
 function! mx#loop(ctx) " {{{
@@ -97,11 +96,6 @@ function! mx#loop(ctx) " {{{
                 break
             endif
         endfor
-
-        if and(result, g:MX_RES_NOUPDATECURSOR) != g:MX_RES_NOUPDATECURSOR
-            call mx#tools#log('update cursor')
-            let a:ctx.cursor = len(a:ctx.cmd)
-        endif
 
         if and(result, g:MX_RES_NODRAWCMDLINE) != g:MX_RES_NODRAWCMDLINE
             call mx#tools#log('draw ctx')

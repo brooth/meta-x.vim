@@ -5,7 +5,6 @@
 
 call mx#tools#setdefault('g:mx#favorits', [
     \   {'word': 'find'},
-    \   {'word': 'so %'},
     \   {'word': 'write', 'short': 'w'},
     \   {'word': 'qall', 'short': 'qa'},
     \   {'word': 'help', 'short': 'h'},
