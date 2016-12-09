@@ -46,12 +46,14 @@ function! mx#handlers#completion#handle(ctx) abort "{{{
 
     if a:ctx.input == 9 || a:ctx.input is# "\<S-Tab>"
         if a:ctx.completemode == 2
-            if a:ctx.input == 9
-                let a:ctx.candidate_idx = len(a:ctx.candidates) - 1 <= a:ctx.candidate_idx ?
-                    \   0 : a:ctx.candidate_idx + 1
-            else
-                let a:ctx.candidate_idx = a:ctx.candidate_idx == 0 ?
-                    \   len(a:ctx.candidates) - 1 : a:ctx.candidate_idx - 1
+            if !empty(a:ctx.candidates)
+                if a:ctx.input == 9
+                    let a:ctx.candidate_idx = len(a:ctx.candidates) - 1 <= a:ctx.candidate_idx ?
+                        \   0 : a:ctx.candidate_idx + 1
+                else
+                    let a:ctx.candidate_idx = a:ctx.candidate_idx == 0 ?
+                        \   len(a:ctx.candidates) - 1 : a:ctx.candidate_idx - 1
+                endif
             endif
         else
             let a:ctx.candidate_idx = a:ctx.completemode == 0 ? -1 : 0
@@ -87,7 +89,7 @@ function! mx#handlers#completion#gather(ctx) abort "{{{
         if has_key(a:ctx, 'completepos')
             unlet a:ctx.completepos
         endif
-    else
+    elseif a:ctx.candidate_idx != -1
         if !has_key(a:ctx, 'completepos')
             let a:ctx.completepos = max([0, strridx(a:ctx.cmd, ' ', a:ctx.cursor)])
             if a:ctx.candidate_idx == -1 && len(a:ctx.candidates) == 1
@@ -101,6 +103,7 @@ function! mx#handlers#completion#gather(ctx) abort "{{{
             let a:ctx.cursor = get(a:ctx.candidates[a:ctx.candidate_idx], 'cursor', len(a:ctx.cmd))
             if len(a:ctx.candidates) == 1
                 let a:ctx.candidates = []
+                let a:ctx.candidate_idx = -1
             endif
         else
             let a:ctx.candidate_idx = -1

@@ -3,7 +3,9 @@
 " Author: Oleg Khalidov <brooth@gmail.com>
 " License: MIT
 
-call mx#tools#setdefault('g:mx#feedkeys_source_whilelist', [])
+call mx#tools#setdefault('g:mx#feedkeys_source_whilelist', [
+    \   '[A-z./]$',
+    \   ])
 call mx#tools#setdefault('g:mx#feedkeys_source_blacklist', [
     \   '^.\?$',
     \   '[-+*=!]$',
